@@ -1,0 +1,512 @@
+##----------------
+## Title: SERC Met Tower minute data: Standardize units, clean, gap-fill, summarise daily_includes forest floor
+## Author: Rutuja
+## Date: March 29, 2018
+##----------------
+#
+# rm(list = ls())
+fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC) {
+
+  if (!require("pacman")) install.packages("pacman"); library(pacman)
+  pacman::p_load(tidyverse, scales, janitor, lubridate, usethis, devtools)
+
+  # graphics info
+  tex <- element_text(size = 12, face = "plain") # , family = "gara"
+  my.theme <-  theme(axis.text = tex, axis.title = tex,
+                     title = tex, legend.title = tex, legend.text = tex, strip.text.y = tex, strip.text.x = tex)
+  my.bg <- theme_bw() + theme(panel.grid.major.y = element_blank(), panel.grid.major.x = element_line(colour = "black", size = 0.25),
+                              panel.grid.minor = element_blank())
+  my.adjust <- theme(axis.title.y = element_text(vjust = 1), axis.title.x = element_text(vjust = -0.6), title = element_text(vjust = 2))
+
+  ## Tidying up SERC met tower weather data
+  # year <- 2019
+  load(file = paste("data-raw/minute_data_", paste(2003, year, sep = "-"), ".Rda", sep = ""))
+  datayears <- c(2003: year)
+  head(met2); tail(met2)
+  met2 <- met2
+  #remove rows with all NAs
+  nrow(met2)
+  met2 <- met2[rowSums(is.na(met2)) != ncol(met2), ]
+  nrow(met2)
+
+  unique(met2$Year)
+  ## all the non-i year data seems to be erroneously present, removing that. (typically just one day)
+  # ## for year 2012
+  # # row 216002 to 216050 had half the rows data overflown in to the next one.
+  # # Locating that area
+  ## Well, not fixing that right now. just removing those data
+  met2 <- met2[met2$Year %in% datayears, ]
+  nrow(met2)
+
+  ## climatedata should contain variables as follows
+  # Tmax - daily maximum temperature in degree Celcius,
+  # Tmin - daily minimum temperature in degree Celcius,
+  # RHmax - daily maximum relative humidity in percentage,
+  # RHmin - daily minimum relative humidity in percentage,
+  # Rs - daily incoming solar radiation in Megajoules per square metres per day
+  # Precip - daily precipitation in millimeters,
+  # u2 - subdaily wind speed measured at 2 meters from the ground surface in meters per second,
+  # uz - subdaily wind speed in meters per second,
+  # Bp - daily vapour pressure in h ectopascal,
+  # met2$mon.day <-
+  #   format(strptime(met2$Julian, format = "%j"), format = "%m-%d")
+  ##------------------------------
+  ## Setting correct date time
+  ##------------------------------
+  met2$Hour2 <- formatC(as.numeric(met2$Hour),  width = 4, flag = "0")
+  met2$date.time <- strptime(paste(met2$Year, met2$Julian, met2$Hour2, sep = "-"), format = "%Y-%j-%H%M")
+  # To see acceptable time zones OlsonNames()
+  met2$date <- as.Date(met2$date.time)
+  tail(met2$date)
+  met2 <- select(met2, -Hour2)
+  met2 <- met2[order(met2$date.time),]
+  # dont see the need to get decimal hours
+  # met2$Hour <- hour(met2$date.time) + minute(met2$date.time)/60
+  # tail(unique(met2$Hour))
+
+  met2 <- met2[!duplicated(met2$date.time),]
+  head(met2);
+  dim(met2)
+  met2 <- met2[order(met2$date, met2$date.time),]
+  met3 <- setNames(data.frame(matrix(ncol = ncol(met2), nrow = nrow(met2))), colnames(met2))
+  met3$Year <- met2$Year; met3$Julian <- met2$Julian; met3$Hour <- met2$Hour;
+  met3$date <- met2$date; met3$date.time <- met2$date.time
+  met3$uz <- met2$uz
+
+  ##------------------------------
+  ## Converting into desired units
+  ##------------------------------
+
+  #****Do not repeat the conversions***
+  # Units in which data is collected is given in "literature/Column_Headers_SERC_weather_data" taken from folder "Data/SERC_Met_Data/MET_TOWER"
+  str(met2);
+  met2$Temp <- as.numeric(met2$Temp)
+  met3$Temp <-
+    met2$Temp * 100 - 40 # Volts to degree celcius
+  met3$RH <- met2$RH * 100
+  met3$Precip <- met2$Precip * 25.4 # inches to mm
+  met3$Rs <-
+    met2$Rs * 10 ^ 6 / 6  * 0.0864 #Volts to W/m-2 to MJ/m2/day (0.0864 multiplier does the last conversion) # 0.2 W/m2 should be normal per minute
+  #met$uz is in meter/second
+  met3$Bp <-
+    met2$Bp*3.38639 # Looks like it is rather in inches Hg, and not pascals. So converting to kPa
+  met3$Temp.tower <-
+    met2$Temp.tower * 100 - 40 # Volts to degree celcius
+  met3$RH.tower <- met2$RH.tower * 100
+  met3$Rs.tower <-
+    met2$Rs.tower * 10 ^ 6 / 6  * 0.0864 #Volts to W/m-2 to MJ/m2/day (0.0864 multiplier does the last conversion) # 0.2 W/m2should be normal per minute
+  #----------------
+  summary(met3)
+  head(met3)
+  ## removing rows with all NAs
+  nrow(met3)
+  met3 <- met3[rowSums(is.na(met3)) != ncol(met3), ]
+  nrow(met3)
+
+  ##--------------------------------------
+  ## Removing unacceptable/erroneous data
+  ##--------------------------------------
+
+  ##*****
+  ## Beyond acceptable range
+  ##*****
+
+  # to substitute outliers with NAs in a new dataframe
+  # Gust winds could be upto 70 km/h i.e. 20 m/s
+  # This is made variable in the Updater.Rmd
+  # df_dict0 <-
+  #   data.frame(
+  #     variable = c("Temp","RH","Rs","Precip","uz", "Bp", "Temp.tower", "RH.tower","Rs.tower"),
+  #     out_low = c(-25, 0, -20, 0, 0, 90, -25, 0, -20),
+  #     out_high = c(60, 100, 50, 300, 50, 120, 60, 100, 50)
+  #   )
+  vars0 <- df_dict0$variable
+
+  met4 <- met3
+  total = length(vars0)
+  # create progress bar
+  pb <- txtProgressBar(min = 0, max = total, style = 3)
+  for (i in vars0) {
+    met4[[i]][met3[[i]] < df_dict0[df_dict0$variable == i,]$out_low |
+                met3[[i]] > df_dict0[df_dict0$variable == i,]$out_high] <- NA
+    Sys.sleep(0.1)
+    # update progress bar
+    setTxtProgressBar(pb, i)
+  }
+  summary(met4)
+  nrow(met4)
+  met4 <- met4[rowSums(is.na(met4)) != ncol(met4), ]
+
+  ##*****
+  ## Within know, bad date range
+  ##*****
+
+  ## Met Tmax, Tmin, RHmin, RHmax (that is forest floor) readings problematic from August 1, 2013 until end of 2014
+  ## Met Tmax.tower, Tmin.tower, RHmin.tower, RHmax.tower (that is tower-top) readings problematic from Jan 2015 - March 9, 2017 (new unit since 3/9/2017)
+  FF.bad.data.dates <- seq(as.Date("2013-08-01"), as.Date("2014-12-31"), by = "1 day"); length(FF.bad.data.dates)
+  tower.bad.data.dates <- seq(as.Date("2015-01-01"), as.Date("2017-03-09"), by = "1 day"); length(tower.bad.data.dates)
+  met4$Temp[which(met4$date %in% FF.bad.data.dates)] <- NA; length(which(is.na(met4$Temp)))
+  met4$RH[which(met4$date %in% FF.bad.data.dates)] <- NA; length(which(is.na(met4$RH)))
+  met4$Temp.tower[which(met4$date %in% tower.bad.data.dates)] <- NA; length(which(is.na(met4$Temp.tower)))
+  met4$RH.tower[which(met4$date %in% tower.bad.data.dates)] <- NA; length(which(is.na(met4$RH.tower)))
+  ##  ****Tower temperature offset ****-------
+  # Notes from data-raw/MetTower_T RH Record Documentation_Pat_Neale/Readme for Tower and Forest Floor Temperature and Relative Humidity data.doc
+  # Tower measurements were shifted to a RM Young 41382 Fan Aspirated unit on 3/9/2017.
+  # **** NOTE  **** The HMP45AC and RMY 41282 have different temperature offsets -40° and -50°, respectively
+  # so need to remove 10 deg Cel to Temp.tower since 3/9/2017
+  ##*** do not repeat this step***
+  ##--------
+  daily.Temp <- met4 %>% select(-date.time) %>%
+    group_by(date) %>% summarise(
+      Tmax = max(Temp, na.rm = TRUE),
+      Tmax.tower = max(Temp.tower, na.rm = TRUE)
+    )
+  plot(daily.Temp$Tmax.tower ~ daily.Temp$date)
+  met4$Temp.tower[which(met4$date > as.Date("2017-03-09"))] <-
+    met4$Temp.tower[which(met4$date > as.Date("2017-03-09"))] - 10;
+  daily.Temp <- met4 %>% select(-date.time) %>%
+    group_by(date) %>% summarise(
+      Tmax = max(Temp, na.rm = TRUE),
+      Tmax.tower = max(Temp.tower, na.rm = TRUE)
+    )
+  plot(daily.Temp$Tmax.tower ~ daily.Temp$date)
+
+  # View(head(met4[which(met4$date %in% tower.bad.data.dates),]))
+  ### from Pat Neale QA,QCd Met Rs data------------
+  # met.Rs.QC.1 <- read.csv("data-raw/MetTower_Rs_data_from_Pat_Neale/TowerWoodsPSP02_17.csv",
+  #                       na.strings = c("NA", "NaN", ""),
+  #                       header = FALSE,
+  #                       row.names = NULL,
+  #                       check.names = F)
+  # met.Rs.QC.2 <- read.csv("data-raw/MetTower_Rs_data_from_Pat_Neale/TowerWoodsPSP18.csv",
+  #                       na.strings = c("NA", "NaN", ""),
+  #                       header = FALSE,
+  #                       row.names = NULL,
+  #                       check.names = F)
+  # met.Rs.QC <- bind_rows(met.Rs.QC.1, met.Rs.QC.2)
+  # For the PSP data, the file has day number (excel format), time
+  # as HHMM integer, then Rs W m-2 for tower and forest floor. NaN’s replace any
+  # “bad”points, this includes all points with Rs < 0 for forest floor.
+  colnames(met.Rs.QC) <- c("date", "time", "Rs.tower", "Rs")
+  head(met.Rs.QC)
+  met.Rs.QC$date <- excel_numeric_to_date(as.numeric(met.Rs.QC$date), include_time = FALSE)
+  met.Rs.QC$Hour2 <- formatC(as.numeric(met.Rs.QC$time),  width = 4, flag = "0")
+  met.Rs.QC$date.time <- as.POSIXct(strptime(paste(as.character(met.Rs.QC$date), met.Rs.QC$Hour2, sep = "-"),
+                                             format = "%Y-%m-%d-%H%M"))
+  str(met.Rs.QC)
+  met.Rs.QC <- select(met.Rs.QC, -Hour2, -date, -time)
+  met.Rs.QC$Rs.tower <- met.Rs.QC$Rs.tower * 0.0864  # in MJ m-2 day-1
+  met.Rs.QC$Rs <- met.Rs.QC$Rs * 0.0864  # in MJ m-2 day-1
+  met4.1 <- met4; met4.1$date.time <- as.POSIXct(met4.1$date.time)
+  met4.1 <- left_join(met4.1, met.Rs.QC, by = "date.time")
+  met4.1$date.time <- as.POSIXlt(met4.1$date.time)
+  met4.1 <- met4.1[!duplicated(met4.1$date.time),]
+  nrow(met4.1); nrow(met4)
+  # both are the same
+  met4.1 <- met4.1[order(met4.1$date.time),];
+  met4 <- met4[order(met4$date.time),]
+  met4$date.time <- as.POSIXct(met4$date.time)
+  met4 <- met4 %>% mutate(Rs.tower = met4.1$Rs.tower.y)
+  # cant do the following yet, for QA-QCd data has NAs
+  # met4 <- met4 %>% mutate(Rs = met4.1$Rs.y)
+  summary(met4)
+  save(met4, file = paste("data-raw/minute_data_", paste(min(datayears),
+                                                         max(datayears), sep = "-"), "_metric.Rda", sep = ""))
+  load(file = paste("data-raw/minute_data_", paste(min(datayears),
+                                                   max(datayears), sep = "-"), "_metric.Rda", sep = ""))
+
+  mettower_minute <- met4
+  write.csv(mettower_minute,
+            "data-raw/mettower_minute.csv",
+            row.names = FALSE)
+  usethis::use_data(mettower_minute, overwrite = TRUE, compress = 'xz')
+  load("data/mettower_minute.Rda")
+
+  head(mettower_minute)
+  str(mettower_minute)
+
+  mettower_minute$date <- as.character(mettower_minute$date)
+  ##--------------------------------------
+  ## Getting daily summaries
+  ##--------------------------------------
+
+  daily0 <- mettower_minute %>% select(-date.time) %>%
+    group_by(date) %>% summarise(
+      Year = mean(Year, na.rm = TRUE),
+      # Month = mean(Month, na.rm = TRUE),
+      # Day = mean(Day, na.rm = TRUE),
+      Tmax = max(Temp, na.rm = TRUE),
+      Tmin = min(Temp, na.rm = TRUE),
+      RHmax = max(RH, na.rm = TRUE),
+      RHmin = min(RH, na.rm = TRUE),
+      Precip = sum(Precip, na.rm = TRUE),
+      uz = mean(uz, na.rm = TRUE),
+      Rs = mean(Rs, na.rm = TRUE),
+      Bp = mean(Bp, na.rm = TRUE),
+      Tmax.tower = max(Temp.tower, na.rm = TRUE),
+      Tmin.tower = min(Temp.tower, na.rm = TRUE),
+      RHmax.tower = max(RH.tower, na.rm = TRUE),
+      RHmin.tower = min(RH.tower, na.rm = TRUE),
+      Rs.tower = mean(Rs.tower, na.rm = TRUE)
+    )
+  # replacing Infinity by NAs
+  daily1 <-
+    do.call(data.frame, lapply(daily0, function(x)
+      replace(x, is.infinite(x), NA)))
+  summary(daily1)
+
+  from <- as.Date(min(met4$date))
+  to <- as.Date(daily1$date[length(daily1$date)])
+  full <- data.frame(date = as.character(seq(from, to, by = '1 day')))
+  daily2 <- merge(daily1, full, by = "date", all.y = T)
+  daily2$date <- strptime(daily2$date, format = "%Y-%m-%d")
+
+  daily2 <- daily2[order(daily2$date), ]
+  missing <- function (x) {
+    df <- data.frame(var = colnames(x), percent_missing = NA)
+    for (i in 1:ncol(x)) {
+      df[i, 2] <- round(length(which(is.na(x[[i]]))) / nrow(x) * 100, 2)
+    }
+    print(df)
+  }
+  daily2 <- daily2[!duplicated(daily2$date), ]
+  missing(daily2)
+  # var percent_missing
+  # 1         date            0.00
+  # 2         Year            2.66
+  # 3         Tmax            2.74
+  # 4         Tmin            2.74
+  # 5        RHmax            3.65
+  # 6        RHmin            3.65
+  # 7       Precip            2.66
+  # 8           uz            2.66
+  # 9           Rs            2.74
+  # 10  Tmax.tower            4.11
+  # 11  Tmin.tower            4.11
+  # 12 RHmax.tower            2.99
+  # 13 RHmin.tower            2.99
+  # 14    Rs.tower            2.78
+  daily2$date <- as.Date(daily2$date)
+  daily2$Julian <-
+    as.numeric(format(daily2$date, format = "%j"))
+  ## replacing seasonally unacceptable extremes
+  ## RHmax in summer below 30 looks unacceptable
+  daily2$RHmax[daily2$Julian >150 & daily2$Julian < 330 & daily2$RHmax < 30] <- NA
+  daily2$RHmax.tower[daily2$Julian >150 & daily2$Julian < 330 & daily2$RHmax.tower < 30] <- NA
+  ## RHmin in summer below 10 looks unaccetable
+  daily2$RHmin[daily2$Julian > 150 & daily2$Julian < 330 & daily2$RHmin < 10] <- NA
+  daily2$RHmin.tower[daily2$Julian > 150 & daily2$Julian < 330 & daily2$RHmin.tower < 10] <- NA
+
+  ## Tmax in summer below 4 looks unaccetable
+  daily2$Tmax[daily2$Julian > 150 & daily2$Julian < 270 & daily2$Tmax < 4] <- NA
+  daily2$Tmax.tower[daily2$Julian > 150 & daily2$Julian < 270 & daily2$Tmax.tower < 4] <- NA
+  ## Tmin in summer below 0 looks unaccetable
+  daily2$Tmin[daily2$Julian > 150 & daily2$Julian < 270 & daily2$Tmin < 0] <- NA
+  daily2$Tmin.tower[daily2$Julian > 150 & daily2$Julian < 270 & daily2$Tmin.tower < 0] <- NA
+  summary(daily2)
+  mettower <- daily2
+  plot(mettower$Tmax.tower ~ mettower$date)
+  write.csv(mettower, "data-raw/mettower.csv", row.names = F)
+  # mettower <- read.csv("data-raw/mettower.csv")
+  usethis::use_data(mettower, overwrite = TRUE)
+  load("data/mettower.Rda")
+
+
+  ##--------------------------------------
+  ## Gap-filling
+  ##--------------------------------------
+  ## green generated by 2.0 SERC_greenhouse_weather_data.R in SERC_hydro-met_data project
+  green <- readRDS("data-raw/greenhouse_weather_data_my_daily_aggregation_2011-2017.RDS")
+  head(green)
+  missing(green)
+  str(green)
+
+  # var percent_missing
+  # 1    date            0.00
+  # 2    Tmax            0.00
+  # 3    Tmin            0.00
+  # 4   RHmax            0.00
+  # 5   RHmin            0.00
+  # 6  Precip            0.00
+  # 7    Epan            1.04
+  # 8      u2            0.00
+  # 9      Rs            6.70
+  # 10    VPD            0.00
+  # dates for which Precip data is missing and is available in dat.sub2
+
+
+  met.green <- left_join(mettower, green, by = "date")
+  head(met.green)
+  # View(met.green)
+  met.green$Precip.x[is.na(met.green$Precip.x)] <- met.green$Precip.y[is.na(met.green$Precip.x)]
+  met.green$Tmax.x[is.na(met.green$Tmax.x)] <- met.green$Tmax.y[is.na(met.green$Tmax.x)]
+  met.green$Tmin.x[is.na(met.green$Tmin.x)] <- met.green$Tmin.y[is.na(met.green$Tmin.x)]
+  met.green$RHmax.x[is.na(met.green$RHmax.x)] <- met.green$RHmax.y[is.na(met.green$RHmax.x)]
+  met.green$RHmin.x[is.na(met.green$RHmin.x)] <- met.green$RHmin.y[is.na(met.green$RHmin.x)]
+
+  ## replacing seasonally unacceptable extremes
+  ## RHmax in summer below 30 looks unaccetable
+  met.green$RHmax.x[met.green$Day >150 & met.green$Day < 330 & met.green$RHmax.x < 30] <-
+    met.green$RHmax.y[met.green$Day >150 & met.green$Day < 330 & met.green$RHmax.x < 30]
+  ## RHmin in summer below 10 looks unaccetable
+  met.green$RHmin.x[met.green$Day > 150 & met.green$Day < 330 & met.green$RHmin.x < 10] <-
+    met.green$RHmin.y[met.green$Day >150 & met.green$Day < 330 & met.green$RHmin.x < 10]
+
+  met.green$RHmin.x[met.green$date > as.Date("2013-05-01") & met.green$date < as.Date("2015-05-01") ] <-
+    met.green$RHmin.y[met.green$date > as.Date("2013-05-01") & met.green$date < as.Date("2015-05-01") ]
+  ## Tmin in summer below 4 looks unaccetable
+  met.green$Tmax.x[met.green$Day > 150 & met.green$Day < 270 & met.green$Tmax.x < 4] <-
+    met.green$Tmax.y[met.green$Day > 150 & met.green$Day < 270 & met.green$Tmax.x < 4]
+  ## Tmin in summer below 0 looks unaccetable
+  met.green$Tmin.x[met.green$Day > 150 & met.green$Day < 270 & met.green$Tmin.x < 0] <-
+    met.green$Tmin.y[met.green$Day > 150 & met.green$Day < 270 & met.green$Tmin.x < 0]
+
+  metbottom.clean <- met.green[, 1:ncol(daily2)]
+  colnames(metbottom.clean) <- colnames(daily2)
+  missing(metbottom.clean)
+  metbottom.clean <- metbottom.clean[!duplicated(metbottom.clean$date), ]
+  metbottom.clean$Tmax <- as.numeric(metbottom.clean$Tmax)
+  metbottom.clean$Tmin <- as.numeric(metbottom.clean$Tmin)
+  # var percent_missing
+  # 1         date            0.00
+  # 2         Year            2.56
+  # 3         Tmax            2.21
+  # 4         Tmin            2.21
+  # 5        RHmax            2.25
+  # 6        RHmin            2.34
+  # 7       Precip            2.14
+  # 8           uz            2.56
+  # 9           Rs            2.66
+  # 10  Tmax.tower            4.06
+  # 11  Tmin.tower            4.06
+  # 12 RHmax.tower            2.90
+  # 13 RHmin.tower            2.90
+  # 14    Rs.tower            2.70
+  # 15      Julian            0.00
+
+  write.csv(metbottom.clean,
+            "data-raw/metbottom.clean.csv",
+            row.names = FALSE)
+  usethis::use_data(metbottom.clean, overwrite = TRUE)
+  load("data/metbottom.clean.Rda")
+
+  # summarise_at(mydata, vars(Y2005, Y2006), funs(n(), mean, median))
+  metbottom.clean$Y <-
+    as.numeric(format(as.Date(metbottom.clean$date), format = "%Y"))
+  library(dplyr)
+  meteo.year1 <- metbottom.clean %>%
+    group_by(Y) %>%
+    dplyr::summarise_at(vars(Tmax, Tmin, RHmax, RHmin, uz, Tmax.tower, Tmin.tower,
+                             RHmax.tower, RHmin.tower, Rs.tower), mean, na.rm = TRUE)
+  meteo.year2 <- metbottom.clean %>%
+    group_by(Y) %>%
+    summarise_at(vars(Precip, Rs), funs(sum(., na.rm = TRUE)))
+
+  meteo.year <- left_join(meteo.year1, meteo.year2, by = "Y")
+  head(meteo.year)
+  library(reshape2)
+  meteo.year.long <- melt(meteo.year, id.vars = colnames(meteo.year)[1], variable.name = "variable", value.name = "value")
+  str(meteo.year.long)
+
+  summary(subset(meteo.year, Y %in% datayears))
+
+  ggplot(subset(meteo.year.long, Y != max(datayears)), aes(x = Y, y = value)) +
+    geom_line(aes(color = variable), show.legend = F) +
+    geom_point(aes(color = variable), size = 1, show.legend = F) +
+    facet_grid(variable ~ ., scales = "free_y") +
+    ylab("") +
+    xlab("year") + my.theme + my.bg + my.adjust + theme(axis.text.x = element_text(size = 10, face = "plain", angle = 90)) +
+    scale_x_continuous(breaks = datayears) +
+    ggtitle("SERC: Annual summary met data (Met Tower-Top and ForestFloor)")
+  ggsave(file.path("figures/annual_met_data.pdf"), height = 12, width = 12, units='in')
+
+  metbottom.clean <- select(metbottom.clean, -Year)
+  head(metbottom.clean)
+  daily3 <- reshape(metbottom.clean, varying = 2:ncol(metbottom.clean), idvar = "date", direction = "long", v.names = "Value",
+                    timevar = "Variable", times = names(metbottom.clean)[-1])
+  head(daily3)
+
+  daily3$date <- as.Date(daily3$date)
+  daily3$Year <-
+    format(daily3$date, format = "%Y")
+  daily3$Month <-
+    format(daily3$date, format = "%m")
+  daily3$Julian <-
+    as.numeric(format(daily3$date, format = "%j"))
+  str(daily3)
+
+  select.var = c("Tmax", "Tmin", "RHmax","RHmin","Rs","Precip","uz","Bp")
+  ggplot(subset(daily3, Variable %in% select.var), aes(x = Julian, y = Value, color = Year)) +
+    # geom_point(size = 1) +
+    geom_line(aes(x = Julian, y = Value, group = Year)) +
+    facet_grid(Variable ~ ., scales = "free_y") +
+    scale_x_continuous(breaks = seq(0, 366, by = 30)) +
+    my.theme + my.bg + my.adjust + theme(panel.grid.major.x = element_blank()) +
+    ggtitle("SERC: Daily Met Tower data - ForestFloor - by year")
+  ggsave(file.path("figures/daily_met_data_by_year.pdf"), height = 12, width = 12, units='in')
+
+  # plotting forest floor vs. top of the tower data
+  daily2.1 <- subset(metbottom.clean, select = c("date","Tmax", "Tmin", "RHmax","RHmin","Rs"))
+  daily4 <- reshape(daily2.1, varying = 2:ncol(daily2.1), idvar = "date", direction = "long", v.names = "Value",
+                    timevar = "Variable", times = names(daily2.1)[2:ncol(daily2.1)])
+  head(daily4)
+  daily4$location <- "Forest Floor"
+  daily2.6 <- subset(metbottom.clean, select = c("date","Tmax.tower", "Tmin.tower", "RHmax.tower", "RHmin.tower", "Rs.tower", "Precip", "uz"))
+  colnames(daily2.6) <-  c("date","Tmax", "Tmin", "RHmax","RHmin","Rs", "Precip", "uz")
+  head(daily2.6)
+  daily5 <- reshape(daily2.6, varying = 2:ncol(daily2.6), idvar = "date", direction = "long", v.names = "Value",
+                    timevar = "Variable", times = names(daily2.6)[2:ncol(daily2.6)])
+  unique(daily5$Variable)
+  head(daily5)
+  daily5$location <- "TowerTop"
+  daily4 <- subset(daily4, select = c("date", "Variable", "Value", "location"))
+  daily5 <- subset(daily5, select = c("date", "Variable", "Value", "location"))
+  daily6 <- rbind.data.frame(daily4, daily5)
+
+  str(daily6)
+  daily6$Julian <-
+    as.numeric(format(daily6$date, format = "%j"))
+  daily6$Year <-
+    format(daily6$date, format = "%Y")
+  daily6$year.location <- paste(daily6$Year, daily6$location, sep = ".")
+  daily6 <- daily6[order(daily6$location, daily6$Year),]
+
+  ggplot(daily6, aes(x = Julian, y = Value, color = location)) +
+    geom_line(aes(x = Julian, y = Value, group = year.location)) +
+    facet_grid(Variable ~ ., scales = "free_y") +
+    scale_x_continuous(breaks = seq(0, 366, by = 30)) +
+    my.theme + my.bg + my.adjust + theme(panel.grid.major.x = element_blank()) +
+    ggtitle("SERC: Daily Met Tower data Tower Top vs. ForestFloor")
+  ggsave(file.path("figures/Tower Top vs. Forest Floor.pdf"), height = 7, width = 12, units='in')
+
+  ##--------------------------------------
+  ## Calculate and plot climatic means by location
+  ##--------------------------------------
+  clim <-
+    daily6 %>%
+    group_by(location, Julian, Variable) %>%
+    dplyr::summarise_at(vars(Value), funs(mean = mean(., na.rm = TRUE),
+                                          sd = sd(., na.rm = TRUE),
+                                          n = sum(!is.na(.))))
+  clim$se = clim$sd/sqrt(clim$n)
+  #
+  head(clim)
+  ggplot(clim, aes(x = Julian, y = mean, color = location)) +
+    geom_line() +
+    geom_errorbar(aes(ymax = mean + se, ymin = mean - se)) +
+    facet_grid(Variable ~ ., scales = "free_y") +
+    scale_x_continuous(breaks = seq(0, 366, by = 30)) +
+    my.theme + my.bg + my.adjust + theme(panel.grid.major.x = element_blank()) +
+    ylab("Daily mean +- SE") +
+    ggtitle("SERC: Met Tower data Tower Top vs. Forest Floor")
+  ggsave(file.path("figures/Tower Top vs. Forest Floor_mean & SE.pdf"), height = 7, width = 12, units='in')
+
+  write.csv(clim,
+            "data-raw/climatic_mean.csv",
+            row.names = FALSE)
+  usethis::use_data(clim, overwrite = TRUE)
+
+devtools::install()
+}
+
+

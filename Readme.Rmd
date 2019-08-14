@@ -1,0 +1,138 @@
+---
+title: "Readme"
+author: "Rutuja Chitra-Tarak"
+date: "7/19/2019"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, results = FALSE)
+```
+
+## How to update this package
+
+This package can be updated by knitting this file (with eval = TRUE in opts_chunk above). Before knitting in order to update to the latest year you will have to (1) set the current 'year' in section 1, as well as, set the 'from.copy.path' to the local path of MET_TOWER folder (change if Rutuja is not updating), and (2) add Pat Neal's QAQCd radiation data file location in section 3.3. This is in case there is one for the latest year (last version was through 2018).
+
+### 1. fun.get_minute_by_year
+
+This function pulls minute data from MetTower folder, where it is downloaded by Jess Shue (typically monthly) from the Photobio lab shared folder (if not, you may have to remind her). It is copied into the current project data-raw folder. It then collates minute data of a year into a single file. Often only data for the current, incomplete year needs to be collated. Avoid compiling earlier years again, as it takes a long time.  
+
+```{r}
+# Set current year
+year <- 2019
+from.copy.path <- "/Users/rutuja/Dropbox (Smithsonian)/Work_at_SERC/Data/SERC_Met_data/MET_TOWER/"
+source("data-raw/functions_to_source_data.R")
+fun.get_minute_by_year(year = year, from.copy.path = from.copy.path)
+```
+
+
+### 2. fun.minute_by_year_into_one_file
+
+This function combines minute data by year files into one single large file, named with initial and last years. Often only the current year needs to be appended to the older multi-year file to generate a new one.
+
+```{r}
+# older file is identified as 2003- (year - 1)
+# year set as in the current year above
+source("data-raw/functions_to_source_data.R")
+fun.minute_by_year_into_one_file(year = year)
+```
+
+### 3. fun.mettower 
+
+This function is the main package function. It does a lot of data vetting and generates .Rda data and installs package:
+
+1. Converts mettower minute data above into desired units as in Table 1.
+2. Cleans by removing: 
+    a. Data in date range within which it is known to be bad, as given in data-raw/MetTower_T RH Record Documentation_Pat_Neale).
+        Note that years worth of data are missing: Met Tmax, Tmin, RHmin, RHmax (that is forest floor) readings problematic from August 1, 2013 until end of 2014.
+        Met Tmax.tower, Tmin.tower, RHmin.tower, RHmax.tower (that is tower-top) readings problematic from Jan 2015 - March 9, 2017 (new unit since 3/9/2017)
+
+    b. Data beyond acceptable range across all period as in Table 1: 
+
+
+##### Table 1: Minute data in metttower_minute.Rda
+
+Variables 'Temp', 'RH', 'Rs' refer to Forest Floor. Those for Tower-Top have the '.tower' suffix.
+
+Column Header  | Variable  | Lower limit | Upper limit | Units
+------------- | ------------- | ------------- | ------------- | -------------
+Temp    | Temperature at Forest Floor| -25 | 60 | degree celcius
+RH      | Relative Humidity at Forest Floor| 0 | 100 | %
+Rs      | Incoming Solar Radiation at Forest Floor| -20 | 50 | MJ/m2/day
+Temp.tower    | Temperature at Tower-Top | -25 | 60 | degree celcius
+RH.tower      | Relative Humidity at Tower-Top | 0 | 100 | %
+Rs.tower      | Incoming Solar Radiation at Tower-Top | -20 | 50 | MJ/m2/day
+Precip  | Precipitation | 0 | 300 | mm
+uz      | Wind speed measured at tower height | 0 | 50 | m/s
+Bp      | Vapour Pressure | 90 | 120 | kPa
+
+3. Reads in radiation QAQCd data given by Pat Neale that substitutes the raw data:
+  Currently until year 2018. Pat usually generates QAQCd data after the end of the year.
+
+    mettower_minute.Rda (also .csv) are generated at this stage. This is saved with 'xz' compression to reduce file size to 130 MB, but saves and loads slow (compare this with ~200 MB size with default 'bzip2' compression)
+   
+    Daily summaries are then created. For Temp and RH they are Tmax, Tmin, RHmax, RHmin.
+  
+4. Unreasonable summer values for the four daily summaries are removed. Summer is defined as  doy > 150 & doy < 330. RHmax in summer below 30% is considered unacceptable, RHmin below 10%, Tmax below 4 deg C and Tmin below 0 deg C
+
+    This data is now stored as mettower.Rda (also .csv).
+
+
+##### Table 2: Daily summaries in mettower.Rda or metbottom.clean.Rda
+
+Variables 'Tmax', 'Tmin', 'RHmax', 'RHmin', 'Rs' refer to Forest Floor. Those for Tower-Top have the '.tower' suffix and have the same units.
+
+Column Header  | Variable | Unit 
+------------- | ------------- | -------------
+Tmax    | Daily Maximum Temperature at Forest Floor| degree Celcius
+Tmin    | Daily Minimum Temperature at Forest Floor| degree Celcius
+RHmax   | Daily Maximum Relative Humidity at Forest Floor| %
+RHmin   | Daily Minimum Relative Humidity at Forest Floor| %
+Rs      | Daily mean Incoming Solar Radiation at Forest Floor | MJ/m^2^/s
+Tmax.tower    | Daily Maximum Temperature at Tower-Top | degree Celcius
+Tmin.tower    | Daily Minimum Temperature at Tower-Top | degree Celcius
+RHmax.tower   | Daily Maximum Relative Humidity at Tower-Top | %
+RHmin.tower   | Daily Minimum Relative Humidity at Tower-Top | %
+Rs.tower      | Daily mean Incoming Solar Radiation at Tower-Top | MJ/m^2^/s
+Precip  | Daily total Precipitation | mm
+uz      | Daily mean wind speed measured at tower height | m/s
+Bp      | Daily mean Vapour Pressure | kPa
+  
+5. Gap-filling: Daily summaries of missing data as well as data removed as above, ---for Forest Floor alone-- are gap-filled from green-house data.
+    Gap-filled version is stored as metbottom.clean.Rda (also .csv). It retains daily summaries for Tower-Top, which are not gap-filled.
+6. Generates graphs for daily and annual summaries. Also a graph comparing daily data for forest floor versus tower-top. See project folder 'figures/'
+7. Finally, calculates and plots climatic mean and SE (for doy across years) for each variable.
+8. mettower package is installed and attached.
+
+#### The following chunk takes 45 min to run on Rutuja's 8GB RAM Intel Core i5
+
+```{r}
+## Refers to Section 3.2.b above
+# Set unacceptable data range
+# If you were to change this range, set it here
+df_dict0 <-
+  data.frame(
+    variable = c("Temp","RH","Rs","Precip","uz", "Bp", "Temp.tower", "RH.tower","Rs.tower"),
+    out_low = c(-25, 0, -20, 0, 0, 90, -25, 0, -20),
+    out_high = c(60, 100, 50, 300, 50, 120, 60, 100, 50)
+  )
+##--
+## Referes to Section 3.3 above
+met.Rs.QC.1 <- read.csv("data-raw/MetTower_Rs_data_from_Pat_Neale/TowerWoodsPSP02_17.csv",
+                      na.strings = c("NA", "NaN", ""),
+                      header = FALSE,
+                      row.names = NULL,
+                      check.names = F)
+met.Rs.QC.2 <- read.csv("data-raw/MetTower_Rs_data_from_Pat_Neale/TowerWoodsPSP18.csv",
+                      na.strings = c("NA", "NaN", ""),
+                      header = FALSE,
+                      row.names = NULL,
+                      check.names = F)
+met.Rs.QC <- bind_rows(met.Rs.QC.1, met.Rs.QC.2)
+##--
+source("data-raw/fun.mettower.R")
+# year as in teh current year set above
+fun.mettower(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC)
+```
+
+

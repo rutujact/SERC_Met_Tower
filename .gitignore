@@ -1,0 +1,12 @@
+# https://jasonstitt.com/gitignore-whitelisting-patterns
+*
+!*/
+!data-raw/*.R
+!/data/**
+data/mettower_minute.Rda
+!.gitignore
+!DESCRIPTION
+!Readme.rmd
+
+# https://stackoverflow.com/questions/44568184/gitignore-everything-except-a-subfolder-with-every-content
+.Rproj.user

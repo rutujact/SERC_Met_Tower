@@ -1,0 +1,12 @@
+Package: mettower
+Type: Package
+Title: Compiled and cleaned Met Tower minute and daily data
+Version: 0.1.0
+Author@R: person("Rutuja", "Chitra-Tarak, email = "arutuj@gmail.com",
+                  role = c("aut", "cre"))
+Maintainer: The package maintainer <arutuj@gmail.com>
+Description: This is a data package. Minute data are compiled into a single file. Cleaned to remove unacceptable values. Rs data is substituted with QaQCd data by Pat Neale.  Minute and daily summaries are provided. Forest Floor gaps are filled with SERC greenhouse station data. Check Readme.html for details. Knit Readme.rmd to update the package.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.1.1
