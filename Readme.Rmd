@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE, eval = TRUE, results = FALSE)
 
 ## How to update this package
 
-This package can be updated by knitting this file (with eval = TRUE in opts_chunk above). Before knitting in order to update to the latest year you will have to (1) set the current 'year' in section 1, as well as, set the 'from.copy.path' to the local path of MET_TOWER folder (change if Rutuja is not updating), and (2) add Pat Neal's QAQCd radiation data file location in section 3.3. This is in case there is one for the latest year (last version was through 2018).
+This package can be updated by knitting this file (with eval = TRUE in opts_chunk above). Before knitting in order to update to the latest year you will have to (1) set the current 'year' in section 1, as well as, set the 'from.copy.path' to the local path of MET_TOWER folder (change if Rutuja is not updating), and (2) add Pat Neal's QAQCd radiation data file location in section 3; if there is a new file for the latest year (last version was through 2018).
 
 ### 1. fun.get_minute_by_year
 
@@ -37,7 +37,7 @@ This function combines minute data by year files into one single large file, nam
 # year set as in the current year above
 # if you wish to collate older years too, then turn old.years = TRUE
 source("data-raw/functions_to_source_data.R")
-# old.years <- FALSE
+# old.years <- FALSE # taken as set in section 1
 fun.minute_by_year_into_one_file(year = year, old.years = old.years)
 ```
 
