@@ -131,14 +131,58 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     as.numeric(format(met3$date, format = "%j"))
   save(met3, file = paste0("data-raw/minute_data_all_years_metric_raw.Rda"))
   load(file = paste0("data-raw/minute_data_all_years_metric_raw.Rda"))
+
+  ###--------------------------------------------
+  ### Substituting clean Rs data from Pat Neale--
+  ###--------------------------------------------
+
+  met4 <- met3; rm(met3)
+
+  # View(head(met4[which(met4$date %in% tower.bad.data.dates),]))
+  ### from Pat Neale QA,QCd Met Rs data------------
+  # met.Rs.QC.1 <- read.csv("data-raw/MetTower_Rs_data_from_Pat_Neale/TowerWoodsPSP02_17.csv",
+  #                       na.strings = c("NA", "NaN", ""),
+  #                       header = FALSE,
+  #                       row.names = NULL,
+  #                       check.names = F)
+  # met.Rs.QC.2 <- read.csv("data-raw/MetTower_Rs_data_from_Pat_Neale/TowerWoodsPSP18.csv",
+  #                       na.strings = c("NA", "NaN", ""),
+  #                       header = FALSE,
+  #                       row.names = NULL,
+  #                       check.names = F)
+  # met.Rs.QC <- bind_rows(met.Rs.QC.1, met.Rs.QC.2)
+  # For the PSP data, the file has day number (excel format), time
+  # as HHMM integer, then Rs W m-2 for tower and forest floor. NaN’s replace any
+  # “bad”points, this includes all points with Rs < 0 for forest floor.
+
+  colnames(met.Rs.QC) <- c("date", "time", "Rs.tower", "Rs")
+  head(met.Rs.QC)
+  met.Rs.QC$date <- excel_numeric_to_date(as.numeric(met.Rs.QC$date), include_time = FALSE)
+  met.Rs.QC$Hour2 <- formatC(as.numeric(met.Rs.QC$time),  width = 4, flag = "0")
+  met.Rs.QC$date.time <- as.POSIXct(strptime(paste(as.character(met.Rs.QC$date), met.Rs.QC$Hour2, sep = "-"),
+                                             format = "%Y-%m-%d-%H%M"))
+  str(met.Rs.QC)
+  met.Rs.QC <- select(met.Rs.QC, -Hour2, -date, -time)
+  met.Rs.QC$Rs.tower <- met.Rs.QC$Rs.tower * 0.0864  # in MJ m-2 day-1
+  met.Rs.QC$Rs <- met.Rs.QC$Rs * 0.0864  # in MJ m-2 day-1
+
+  ## making space
+  rm(met2)
+  ## making space
+
+
+  met4 <- left_join(met4, met.Rs.QC, by = "date.time")
+  met4 <- met4 %>% mutate(Rs = Rs.y,
+                          Rs.tower = Rs.tower.y) %>%
+    select(-Rs.x, -Rs.y, -Rs.tower.x, -Rs.tower.y)
+  summary(met4)
+
   ##--------------------------------------
   ## Removing unacceptable/erroneous data
   ##--------------------------------------
 
-  met4 <- met3
-
   ##*****
-  ## 1. Within known, bad date range
+  ## 1. Remove data within known, bad date range
   ##*****
   ## Doing this first since filter based on RH > 100
 
@@ -173,10 +217,11 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
 
    met4 <- met4 %>% mutate(SVP.tower = 0.61121 * exp((18.678 - Temp.tower/234.84) * (Temp.tower/(257.14 + T))),
                            SVP = 0.61121 * exp((18.678 - Temp/234.84) * (Temp/(257.14 + T))))
+
   # Cleaning SVP beyond acceptable range before calculating VPD
 
   ##*****
-  ## 2. Beyond acceptable range
+  ## 2. Remove data beyond acceptable range
   ##*****
 
   # to substitute outliers with NAs in a new dataframe
@@ -184,9 +229,9 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   # This is made variable in the Updater.Rmd
   # df_dict0 <-
   #   data.frame(
-  #     variable = c("Temp", "Temp.tower","RH","RH.tower","Rs.tower", "Rs","Precip", "uz", "Bp", "SVP", "SVP.tower"),
+  #     variable = c("Temp", "Temp.tower", "RH", "RH.tower", "Rs", "Rs.tower", "Precip", "uz", "Bp", "SVP", "SVP.tower"),
   #     out_low = c(-25, -25, 0, 0, -20, -20, 0, 0, 90, 0, 0),
-  #     out_high = c(50, 50, 100, 100, 20, 40, 300, 50, 120, 10, 10)
+  #     out_high = c(50, 50, 100, 100, 20, 40, 300, 50, 106, 10, 10)
   #   )
   vars0 <- df_dict0$variable
   ## make all RH records greater than 100 to 100
@@ -196,8 +241,8 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   # create progress bar
   pb <- txtProgressBar(min = 0, max = total, style = 3)
   for (i in vars0) {
-    met4[[i]][met3[[i]] < df_dict0[df_dict0$variable == i,]$out_low |
-                met3[[i]] > df_dict0[df_dict0$variable == i,]$out_high] <- NA
+    met4[[i]][met4[[i]] < df_dict0[df_dict0$variable == i,]$out_low |
+                met4[[i]] > df_dict0[df_dict0$variable == i,]$out_high] <- NA
     Sys.sleep(0.1)
     # update progress bar
     setTxtProgressBar(pb, i)
@@ -213,50 +258,6 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   #   Calculate the VPD = SVP x (1 – RH/100) = VPD
   met4 <- met4 %>% mutate(VPD.tower = SVP.tower * (1 - RH.tower/100),
                           VPD = SVP * (1 - RH/100))
-  # View(head(met4[which(met4$date %in% tower.bad.data.dates),]))
-  ### from Pat Neale QA,QCd Met Rs data------------
-  # met.Rs.QC.1 <- read.csv("data-raw/MetTower_Rs_data_from_Pat_Neale/TowerWoodsPSP02_17.csv",
-  #                       na.strings = c("NA", "NaN", ""),
-  #                       header = FALSE,
-  #                       row.names = NULL,
-  #                       check.names = F)
-  # met.Rs.QC.2 <- read.csv("data-raw/MetTower_Rs_data_from_Pat_Neale/TowerWoodsPSP18.csv",
-  #                       na.strings = c("NA", "NaN", ""),
-  #                       header = FALSE,
-  #                       row.names = NULL,
-  #                       check.names = F)
-  # met.Rs.QC <- bind_rows(met.Rs.QC.1, met.Rs.QC.2)
-  # For the PSP data, the file has day number (excel format), time
-  # as HHMM integer, then Rs W m-2 for tower and forest floor. NaN’s replace any
-  # “bad”points, this includes all points with Rs < 0 for forest floor.
-  colnames(met.Rs.QC) <- c("date", "time", "Rs.tower", "Rs")
-  head(met.Rs.QC)
-  met.Rs.QC$date <- excel_numeric_to_date(as.numeric(met.Rs.QC$date), include_time = FALSE)
-  met.Rs.QC$Hour2 <- formatC(as.numeric(met.Rs.QC$time),  width = 4, flag = "0")
-  met.Rs.QC$date.time <- as.POSIXct(strptime(paste(as.character(met.Rs.QC$date), met.Rs.QC$Hour2, sep = "-"),
-                                             format = "%Y-%m-%d-%H%M"))
-  str(met.Rs.QC)
-  met.Rs.QC <- select(met.Rs.QC, -Hour2, -date, -time)
-  met.Rs.QC$Rs.tower <- met.Rs.QC$Rs.tower * 0.0864  # in MJ m-2 day-1
-  met.Rs.QC$Rs <- met.Rs.QC$Rs * 0.0864  # in MJ m-2 day-1
-
-  ## making space
-  rm(met2, met3)
-  ## making space
-
-  met4.1 <- met4; met4.1$date.time <- as.POSIXct(met4.1$date.time)
-  met4.1 <- left_join(met4.1, met.Rs.QC, by = "date.time")
-  met4.1$date.time <- as.POSIXlt(met4.1$date.time)
-  met4.1 <- met4.1[!duplicated(met4.1$date.time),]
-  nrow(met4.1); nrow(met4)
-  # both are the same
-  met4.1 <- met4.1[order(met4.1$date.time),];
-  met4 <- met4[order(met4$date.time),]
-  met4$date.time <- as.POSIXct(met4$date.time)
-  met4 <- met4 %>% mutate(Rs.tower = met4.1$Rs.tower.y)
-  # cant do the following yet, for QA-QCd data has NAs
-  # met4 <- met4 %>% mutate(Rs = met4.1$Rs.y)
-  summary(met4)
 
   mettower_minute <- met4
   write.table(mettower_minute,

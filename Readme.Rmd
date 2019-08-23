@@ -45,15 +45,19 @@ fun.minute_by_year_into_one_file(year = year, old.years = old.years)
 
 This function is the main package function. It does a lot of data vetting and generates .Rda data and installs package:
 
-1. Converts mettower minute data above into desired units as in Table 1.
+1. Reads in and substitutes radiation QAQCd data given by Pat Neale:
+  Currently until year 2018. Pat usually generates QAQCd data after the end of the year.1. Converts mettower minute data above into desired units as in Table 1.
+
 2. Cleans by removing: 
     a. Data in date range within which it is known to be bad, as given in data-raw/MetTower_T RH Record Documentation_Pat_Neale).
         Note that years worth of data are missing: Met Tmax, Tmin, RHmin, RHmax (that is forest floor) readings problematic from August 1, 2013 until end of 2014.
         Met Tmax.tower, Tmin.tower, RHmin.tower, RHmax.tower (that is tower-top) readings problematic from Jan 2015 - March 9, 2017 (new unit since 3/9/2017). 
         Temp.tower is removed when RH.tower > 100 during 2015-01-01 to 2015-11-13 and 2016-08-02 to 2017-03-09. RH.tower is flagged in column tower.RH.Flag as 0 from 2015-01-01 to 2015-11-13 (records ~ 6% lower RH), while from 2016-08-02 to 2017-03-09 RH.tower is removed.
 
-    b. Data beyond acceptable range across all period as in Table 1: 
-
+        SVP/Saturated Vapour Pressure is derived using Temp and RH based on Buck's equation.
+        
+    b. Data beyond acceptable range across all period as in Table 1.
+        Also Temp < 4 deg c in summer (doy > 150 & doy < 330) also removed.
 
 ##### Table 1: Minute data in metttower_minute.Rda
 
@@ -76,9 +80,6 @@ uz      | Wind speed measured at tower height | 0 | 50 | m/s
 Bp      | Vapour Pressure | 90 | 120 | kPa
 tower.RH.Flag | 0 = RH falls in problematic date-range 2015-01-01 to 2015-11-13, else 1
 
-3. Reads in radiation QAQCd data given by Pat Neale that substitutes the raw data:
-  Currently until year 2018. Pat usually generates QAQCd data after the end of the year.
-
     mettower_minute.Rda (also .csv) are generated at this stage. This is saved with 'xz' compression to reduce file size to 130 MB, but saves and loads slow (compare this with ~200 MB size with default 'bzip2' compression)
    
     Daily summaries are then created. For Temp and RH they are Tmax, Tmin, RHmax, RHmin.
@@ -86,7 +87,6 @@ tower.RH.Flag | 0 = RH falls in problematic date-range 2015-01-01 to 2015-11-13,
 4. Unreasonable summer values for the four daily summaries are removed. Summer is defined as  doy > 150 & doy < 330. RHmax in summer below 30% is considered unacceptable, RHmin below 10%, Tmax below 4 deg C and Tmin below 0 deg C
 
     This data is now stored as mettower.Rda (also .txt).
-
 
 ##### Table 2: Daily summaries in mettower.Rda or metbottom.clean.Rda
 
@@ -129,7 +129,7 @@ df_dict0 <-
   data.frame(
     variable = c("Temp", "Temp.tower", "RH", "RH.tower", "Rs", "Rs.tower", "Precip", "uz", "Bp", "SVP", "SVP.tower"),
     out_low = c(-25, -25, 0, 0, -20, -20, 0, 0, 90, 0, 0),
-    out_high = c(50, 50, 100, 100, 20, 40, 300, 50, 120, 10, 10)
+    out_high = c(50, 50, 100, 100, 20, 40, 300, 50, 106, 10, 10)
   )
 ##--
 ## Referes to Section 3.3 above
