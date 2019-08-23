@@ -129,6 +129,8 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   met3$date <- as.Date(met3$date)
   met3$Julian <-
     as.numeric(format(met3$date, format = "%j"))
+  save(met3, file = paste0("data-raw/minute_data_all_years_metric_raw.Rda"))
+  load(file = paste0("data-raw/minute_data_all_years_metric_raw.Rda"))
   ##--------------------------------------
   ## Removing unacceptable/erroneous data
   ##--------------------------------------
@@ -237,6 +239,11 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   met.Rs.QC <- select(met.Rs.QC, -Hour2, -date, -time)
   met.Rs.QC$Rs.tower <- met.Rs.QC$Rs.tower * 0.0864  # in MJ m-2 day-1
   met.Rs.QC$Rs <- met.Rs.QC$Rs * 0.0864  # in MJ m-2 day-1
+
+  ## making space
+  rm(met2, met3)
+  ## making space
+
   met4.1 <- met4; met4.1$date.time <- as.POSIXct(met4.1$date.time)
   met4.1 <- left_join(met4.1, met.Rs.QC, by = "date.time")
   met4.1$date.time <- as.POSIXlt(met4.1$date.time)
@@ -250,8 +257,6 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   # cant do the following yet, for QA-QCd data has NAs
   # met4 <- met4 %>% mutate(Rs = met4.1$Rs.y)
   summary(met4)
-  save(met4, file = paste0("data-raw/minute_data_all_years_metric.Rda"))
-  load(file = paste0("data-raw/minute_data_all_years_metric.Rda"))
 
   mettower_minute <- met4
   write.table(mettower_minute,
@@ -455,7 +460,6 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   # summarise_at(mydata, vars(Y2005, Y2006), funs(n(), mean, median))
   metbottom.clean$Y <-
     as.numeric(format(as.Date(metbottom.clean$date), format = "%Y"))
-  library(dplyr)
   meteo.year1 <- metbottom.clean %>%
     group_by(Y) %>%
     dplyr::summarise_at(vars(Tmax, Tmin, RHmax, RHmin, uz, Tmax.tower, Tmin.tower,
@@ -547,9 +551,9 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   clim <-
     daily6 %>%
     group_by(location, Julian, Variable) %>%
-    dplyr::summarise_at(vars(Value), list(mean = mean(., na.rm = TRUE),
-                                          sd = sd(., na.rm = TRUE),
-                                          n = sum(!is.na(.))))
+    dplyr::summarise_at(vars(Value), list(mean = ~mean(., na.rm = TRUE),
+                                          sd = ~sd(., na.rm = TRUE),
+                                          n = ~sum(!is.na(.))))
   clim$se = clim$sd/sqrt(clim$n)
   #
   head(clim)

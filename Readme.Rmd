@@ -22,7 +22,7 @@ This function pulls minute data from MetTower folder, where it is downloaded by 
 # If you wish to collate older years too, then turn old.years = TRUE
 year <- 2019
 from.copy.path <- "/Users/rutuja/Dropbox (Smithsonian)/Work_at_SERC/Data/SERC_Met_data/MET_TOWER/"
-old.years <- TRUE
+old.years <- FALSE
 source("data-raw/functions_to_source_data.R")
 fun.get_minute_by_year(year = year, from.copy.path = from.copy.path, old.years = old.years)
 ```
@@ -37,7 +37,7 @@ This function combines minute data by year files into one single large file, nam
 # year set as in the current year above
 # if you wish to collate older years too, then turn old.years = TRUE
 source("data-raw/functions_to_source_data.R")
-old.years <- TRUE
+# old.years <- FALSE
 fun.minute_by_year_into_one_file(year = year, old.years = old.years)
 ```
 
