@@ -1,12 +1,12 @@
 ---
-title: "Readme"
+title: "MetTower Readme and Updater"
 author: "Rutuja Chitra-Tarak"
 date: "7/19/2019"
 output: html_document
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(echo = TRUE, eval = TRUE, results = FALSE)
+knitr::opts_chunk$set(echo = TRUE, results = FALSE, warning = FALSE, message = FALSE)
 ```
 
 ## How to update this package
@@ -17,12 +17,12 @@ This package can be updated by knitting this file (with eval = TRUE in opts_chun
 
 This function pulls minute data from MetTower folder, where it is downloaded by Jess Shue (typically monthly) from the Photobio lab shared folder (if not, you may have to remind her). It is copied into the current project data-raw folder. It then collates minute data of a year into a single file. Often only data for the current, incomplete year needs to be collated. Avoid compiling earlier years again, as it takes a long time.  
 
-```{r}
+```{r, Section 1, eval = FALSE}
 # Set current year
 # If you wish to collate older years too, then turn old.years = TRUE
 year <- 2019
 from.copy.path <- "/Users/rutuja/Dropbox (Smithsonian)/Work_at_SERC/Data/SERC_Met_data/MET_TOWER/"
-old.years <- FALSE
+old.years <- TRUE
 source("data-raw/functions_to_source_data.R")
 fun.get_minute_by_year(year = year, from.copy.path = from.copy.path, old.years = old.years)
 ```
@@ -32,7 +32,7 @@ fun.get_minute_by_year(year = year, from.copy.path = from.copy.path, old.years =
 
 This function combines minute data by year files into one single large file, named with initial and last years. Often only the current year needs to be appended to the older multi-year file to generate a new one.
 
-```{r}
+```{r, Section 2, eval = FALSE}
 # older file is identified as 2003- (year - 1)
 # year set as in the current year above
 # if you wish to collate older years too, then turn old.years = TRUE
@@ -57,79 +57,79 @@ This function is the main package function. It does a lot of data vetting and ge
         SVP/Saturated Vapour Pressure is derived using Temp and RH based on Buck's equation.
         
     b. Data beyond acceptable range across all period as in Table 1.
-        Also Temp < 4 deg c in summer (doy > 150 & doy < 330) also removed.
+       Also Temp < 4 deg c in summer (doy > 150 & doy < 330) also removed.
+       
+       mettower_minute.Rda (also .csv) are generated at this stage. ~364 MB size with default 'bzip2' compression. This can be saved with 'xz' compression to reduce file size, but saves and loads quite slow.
 
 ##### Table 1: Minute data in metttower_minute.Rda
 
 Variables 'Temp', 'RH', 'Rs' refer to Forest Floor. Those for Tower-Top have the '.tower' suffix.
 
-Column Header  | Variable  | Lower limit | Upper limit | Units
-------------- | ------------- | ------------- | ------------- | -------------
-Temp    | Temperature at Forest Floor| -25 | 50 | degree celcius
-RH      | Relative Humidity at Forest Floor| 0 | 100 | %
-SVP | Saturated Vapor Pressure at Forest Floor | 0 | 20 | kPa
-VPD | Vapor Pressure Deficit at Forest Floor | NA | NA | kPa
-Rs      | Incoming Solar Radiation at Forest Floor| -20 | 20 | MJ/m2/day
+Column Header  | Variable | Lower limit | Upper limit | Units
+------------- | -------------------------- | ------------- | ------------- | -------------
+Precip.tower  | Precipitation | 0 | 300 | mm
+ws.tower      | Wind speed measured at tower height | 0 | 50 | m/s
+Bp.tower      | Vapour Pressure | 90 | 104 | kPa
+Rs.floor      | Incoming Solar Radiation at Forest Floor| 0 | 12 | MJ/m2/day
+Rs.tower      | Incoming Solar Radiation at Tower-Top | 0 | 12 | MJ/m2/day
+Temp.floor    | Temperature at Forest Floor| -25 | 50 | degree celcius
 Temp.tower    | Temperature at Tower-Top | -25 | 50 | degree celcius
+RH.floor      | Relative Humidity at Forest Floor| 0 | 100 | %
 RH.tower      | Relative Humidity at Tower-Top | 0 | 100 | %
-SVP.tower | Saturated Vapor Pressure at Tower-Top |  0 | 20 | kPa
-VPD.tower | Vapor Pressure Deficit at Tower-Top | NA | NA | kPa
-Rs.tower      | Incoming Solar Radiation at Tower-Top | -20 | 40 | MJ/m2/day
-Precip  | Precipitation | 0 | 300 | mm
-uz      | Wind speed measured at tower height | 0 | 50 | m/s
-Bp      | Vapour Pressure | 90 | 120 | kPa
 tower.RH.Flag | 0 = RH falls in problematic date-range 2015-01-01 to 2015-11-13, else 1
-
-    mettower_minute.Rda (also .csv) are generated at this stage. This is saved with 'xz' compression to reduce file size to 130 MB, but saves and loads slow (compare this with ~200 MB size with default 'bzip2' compression)
-   
-    Daily summaries are then created. For Temp and RH they are Tmax, Tmin, RHmax, RHmin.
+SVP.floor | Saturated Vapor Pressure at Forest Floor | 0 | 20 | kPa
+SVP.tower | Saturated Vapor Pressure at Tower-Top |  0 | 20 | kPa
+VPD.floor | Vapor Pressure Deficit at Forest Floor | NA | NA | kPa
+VPD.tower | Vapor Pressure Deficit at Tower-Top | NA | NA | kPa
   
-4. Unreasonable summer values for the four daily summaries are removed. Summer is defined as  doy > 150 & doy < 330. RHmax in summer below 30% is considered unacceptable, RHmin below 10%, Tmax below 4 deg C and Tmin below 0 deg C
+4. Daily summaries are then created at this stage. For Temp and RH they are Tmax, Tmin, RHmax, RHmin. Unreasonable summer values are removed. Summer is defined as  doy > 150 & doy < 330. RHmax in summer below 30% is considered unacceptable, RHmin below 10%, Tmax below 4 deg C and Tmin below 0 deg C
 
     This data is now stored as mettower.Rda (also .txt).
 
-##### Table 2: Daily summaries in mettower.Rda or metbottom.clean.Rda
+##### Table 2: Daily summaries in mettower.Rda or metbottom.filled.Rda
 
 Variables 'Tmax', 'Tmin', 'RHmax', 'RHmin', 'Rs' refer to Forest Floor. Those for Tower-Top have the '.tower' suffix and have the same units.
 
 Column Header  | Variable | Unit 
-------------- | ------------- | -------------
-Tmax    | Daily Maximum Temperature at Forest Floor| degree Celcius
-Tmin    | Daily Minimum Temperature at Forest Floor| degree Celcius
-RHmax   | Daily Maximum Relative Humidity at Forest Floor| %
-RHmin   | Daily Minimum Relative Humidity at Forest Floor| %
-Rs      | Daily mean Incoming Solar Radiation at Forest Floor | MJ/m^2^/s
-SVPmax | Daily Maximum Saturated Vapor Pressure at Forest Floor | kPa
-VPDmax | Daily Maximum Vapor Pressure Deficit at Forest Floor | kPa
+------------- | -------------------------- | -------------
+Precip.tower  | Daily total Precipitation | mm
+ws.tower      | Daily mean wind speed measured at tower height | m/s
+Bp.tower      | Daily mean Vapour Pressure | kPa
+Rs.floor      | Daily mean Incoming Solar Radiation at Forest Floor | MJ/m^2^/day
+Rs.tower      | Daily mean Incoming Solar Radiation at Tower-Top | MJ/m^2^/day
+Tmax.floor    | Daily Maximum Temperature at Forest Floor| degree Celcius
 Tmax.tower    | Daily Maximum Temperature at Tower-Top | degree Celcius
+Tmin.floor    | Daily Minimum Temperature at Forest Floor| degree Celcius
 Tmin.tower    | Daily Minimum Temperature at Tower-Top | degree Celcius
+RHmax.floor   | Daily Maximum Relative Humidity at Forest Floor| %
 RHmax.tower   | Daily Maximum Relative Humidity at Tower-Top | %
+RHmin.floor   | Daily Minimum Relative Humidity at Forest Floor| %
 RHmin.tower   | Daily Minimum Relative Humidity at Tower-Top | %
-Rs.tower      | Daily mean Incoming Solar Radiation at Tower-Top | MJ/m^2^/s
+tower.RH.Flag | 0 = day that contains at least one minute datum that falls in problematic date-range 2015-01-01 to 2015-11-13, else 1
+SVPmax.floor | Daily Maximum Saturated Vapor Pressure at Forest Floor | kPa
 SVPmax.tower | Daily Maximum Saturated Vapor Pressure at Tower-Top | kPa
+VPDmax.floor | Daily Maximum Vapor Pressure Deficit at Forest Floor | kPa
 VPDmax.tower | Daily Maximum Vapor Pressure Deficit at Tower-Top | kPa
-Precip  | Daily total Precipitation | mm
-uz      | Daily mean wind speed measured at tower height | m/s
-Bp      | Daily mean Vapour Pressure | kPa
-tower.RH.Flag | 0 = day that contains at least one data point that falls in problematic date-range 2015-01-01 to 2015-11-13, else 1
 
 5. Gap-filling: Daily summaries of missing data as well as data removed as above, ---for Forest Floor alone-- are gap-filled from green-house data.
-    Gap-filled version is stored as metbottom.clean.Rda (also .txt). It retains daily summaries for Tower-Top, which are not gap-filled.
+    Gap-filled version is stored as metbottom.filled.Rda (also .txt). It retains daily summaries for Tower-Top, which are not gap-filled.
 6. Generates graphs for daily and annual summaries. Also a graph comparing daily data for forest floor versus tower-top. See project folder 'figures/'
 7. Finally, calculates and plots climatic mean and SE (for doy across years) for each variable.
 8. mettower package is installed and attached.
 
 #### The following chunk takes 45 min to run on Rutuja's 8GB RAM Intel Core i5
 
-```{r}
+```{r, Section 3, eval = TRUE}
 ## Refers to Section 3.2.b above
 # Set unacceptable data range
 # If you were to change this range, set it here
+include.figures <- TRUE # TRUE includes figure in knitted document. Turn to FALSE to save to figures folder instead.
+year <- 2019
 df_dict0 <-
   data.frame(
-    variable = c("Temp", "Temp.tower", "RH", "RH.tower", "Rs", "Rs.tower", "Precip", "uz", "Bp", "SVP", "SVP.tower"),
-    out_low = c(-25, -25, 0, 0, -20, -20, 0, 0, 90, 0, 0),
-    out_high = c(50, 50, 100, 100, 20, 40, 300, 50, 106, 10, 10)
+    variable = c("Precip.tower", "Ws.tower", "Bp.tower", "Rs.floor", "Rs.tower", "Temp.floor", "Temp.tower", "RH.floor", "RH.tower", "SVP.floor", "SVP.tower"),
+    out_low = c(0, 0, 90, 0, 0, -25, -25, 0, 0, 0, 0),
+    out_high = c(300, 50, 104, 30, 40, 50, 50, 100, 100, 10, 10)
   )
 ##--
 ## Referes to Section 3.3 above
@@ -143,9 +143,9 @@ met.Rs.QC.2 <- read.csv("data-raw/MetTower_Rs_data_from_Pat_Neale/TowerWoodsPSP1
                       header = FALSE,
                       row.names = NULL,
                       check.names = F)
-met.Rs.QC <- rbind.data.frame(met.Rs.QC.1, met.Rs.QC.2)
+met.Rs.QC.3 <- rbind.data.frame(met.Rs.QC.1, met.Rs.QC.2)
 ##--
 source("data-raw/fun.mettower.R")
 # year as in the current year set above
-fun.mettower(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC)
+fun.mettower(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC, include.figures = include.figures)
 ```

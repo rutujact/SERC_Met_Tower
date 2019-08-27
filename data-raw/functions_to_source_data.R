@@ -98,7 +98,7 @@ fun.get_minute_by_year <-
         ## all files data have these values in column 1 and 2 (or 0 and 1 as above)
         keep <-
           all_content[c(stringi::stri_startswith_fixed(str = all_content, pattern = "51,21,"))]
-        ## accept only those rows that have all cols.to.read
+        ## accept only those roWs that have all cols.to.read
         all.cols <-
           which(sapply(strsplit(keep, ","), length) == cols.to.read)
         if (length(all.cols > 0)) {
@@ -197,12 +197,12 @@ fun.minute_by_year_into_one_file <-
           "Year",
           "Julian",
           "Hour",
-          "Temp",
-          "RH",
-          "Rs",
-          "Precip",
-          "uz",
-          "Bp",
+          "Temp.floor",
+          "RH.floor",
+          "Rs.floor",
+          "Precip.tower",
+          "Ws.tower",
+          "Bp.tower",
           "Temp.tower",
           "RH.tower",
           "Rs.tower"
@@ -274,12 +274,12 @@ fun.minute_by_year_into_one_file <-
         "Year",
         "Julian",
         "Hour",
-        "Temp",
-        "RH",
-        "Rs",
-        "Precip",
-        "uz",
-        "Bp",
+        "Temp.floor",
+        "RH.floor",
+        "Rs.floor",
+        "Precip.tower",
+        "uz.tower",
+        "Bp.tower",
         "Temp.tower",
         "RH.tower",
         "Rs.tower"
