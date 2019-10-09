@@ -5,7 +5,7 @@
 ##----------------
 #
 # rm(list = ls())
-fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC) {
+fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC.3 = met.Rs.QC.3) {
 
   if (!require("pacman")) install.packages("pacman"); library(pacman)
   pacman::p_load(tidyverse, scales, janitor, lubridate, usethis, devtools,
@@ -119,22 +119,21 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
       Tmax.tower.after = max(Temp.tower, na.rm = TRUE)) %>%
     gather(key = "variable", value = "value", -date) %>%
     mutate(offset = if_else(variable == "Tmax.tower.before",
-                            "Before 10 deg C offset", "After 10 deg C offset"),
+                            "Before offset correction", "After offset correction"),
            variable = "Tmax",
-           offset = fct_relevel(offset, "After 10 deg C offset", after = 1))
+           offset = fct_relevel(offset, "After offset correction", after = 1))
   # head((daily.Temp)
   graph.1 <- ggplot(daily.Temp, aes(x = date, y = value)) +
-    geom_point()+
+    geom_point(size = 0.5, alpha = 0.7)+
     ylim(c(df_dict0$out_low[which(df_dict0$variable == "Temp.tower")],
            df_dict0$out_high[which(df_dict0$variable == "Temp.tower")])) +
     ylab("degree C") + xlab("Date") +
-    facet_grid(. ~ offset) +
-    ggtitle("Tower-Top Temp offset changes by 10 deg C 2017-03-09 onwards")
+    facet_grid(offset ~ .) + my.theme + my.bg +
+    ggtitle("Tower Top Temp offset changes by 10 deg C 2017-03-09 onwards")
 
-  graph.1; ggsave(file.path("figures/Tower Temp offset changes by 10 deg C 2017-03-09 onwards.pdf"), height = 12, width = 12, units='in')
-  # save graph object
-  graphs.list <- list();
-  graphs.list[[length(graphs.list) + 1]] <- graph.1
+  graph.1;
+  #ggsave(file.path("figures/graph.1_Tower Temp offset changes by 10 deg C 2017-03-09 onwards.pdf"), height = 12, width = 12, units='in')
+  ggsave(file.path("figures/graph.1_Tower Temp offset changes by 10 deg C 2017-03-09 onwards.png"), height = 5, width = 6, units='in')
 
   met3 <- met3 %>% select(-Temp.tower.before) %>%
     mutate(date = as.Date(date),
@@ -155,11 +154,9 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     type = c("l"), main = "Mettower Raw Data Daily Means in SI units") +
     layer_(panel.xblocks(x, is.na(y), col = "darkgray"))
   }
-  pdf("figures/mettower Raw Data Daily Means in SI units.pdf",  height = 9, width = 12)
+  png("figures/mettower Raw Data Daily Means in SI units.png", height = 768, width = 1024, units ="px", res = 150)
   plot.datagaps.1(met3)
   while (!is.null(dev.list()))  {dev.off()}
-  graphs.list.func <- list()
-  graphs.list.func$plot.datagaps.1 <- plot.datagaps.1
 
   ###--------------------------------------------
   ### Substituting clean Rs data from Pat Neale--
@@ -208,9 +205,11 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     geom_line() + ylab("MJ m-2 day-1") + xlab("Date") +
     facet_grid(key ~ ., scales = "free_y") +
     my.theme + my.bg + my.adjust + theme(panel.grid.major.x = element_blank()) +
-    ggtitle("SERC: Daily MetTower cleaned Rs data from Pat Neale Tower-Top & Forest floor")
-   graph.2; ggsave(file.path("figures/Daily MetTower cleaned Rs data from Pat Neale Tower-Top & Forest floor.pdf"), height = 12, width = 12, units='in')
-   graphs.list[[length(graphs.list) + 1]] <- graph.2
+    ggtitle("Daily Met Tower cleaned Rs data from Pat Neale\nTower Top versus Forest Floor")
+   graph.2;
+   #ggsave(file.path("figures/Daily Met Tower cleaned Rs data from Pat Neale Tower Top & Forest floor.pdf"), height = 12, width = 12, units='in')
+   ggsave(file.path("figures/graph.2_Daily Met Tower cleaned Rs data from Pat Neale Tower Top & Forest floor.png"), height = 5, width = 6, units='in')
+
   ## making space
   rm(met2)
   ## making space
@@ -232,7 +231,7 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
 
   ## See Notes from data-raw/MetTower_T RH Record Documentation_Pat_Neale/Readme for Tower and Forest Floor Temperature and Relative Humidity data.doc
   ## Met Tmax, Tmin, RHmin, RHmax (that is forest floor) readings problematic from August 1, 2013 until end of 2014
-  ## Met Tmax.tower, Tmin.tower, RHmin.tower, RHmax.tower (that is tower-top) readings problematic in the range Jan 2015 - March 9, 2017 (new unit since 3/9/2017)
+  ## Met Tmax.tower, Tmin.tower, RHmin.tower, RHmax.tower (that is tower top) readings problematic in the range Jan 2015 - March 9, 2017 (new unit since 3/9/2017)
 
   FF.bad.data.dates <- seq(as.Date("2013-08-01"), as.Date("2014-12-31"), by = "1 day"); length(FF.bad.data.dates)
   met4$Temp.floor[which(met4$date %in% FF.bad.data.dates)] <- NA; length(which(is.na(met4$Temp.floor)))
@@ -552,11 +551,10 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     type = c("l"), main = "Mettower Daily Data gaps") +
     layer_(panel.xblocks(x, is.na(y), col = "darkgray"))
   }
-  pdf("figures/mettower_daily_gap.pdf",  height = 9, width = 12)
+  #pdf("figures/mettower_daily_gap.pdf", height = 9, width = 12)
+  png("figures/mettower_daily_gap.png", height = 768, width = 1344, units ="px", res = 150)
   plot.datagaps.2(mettower)
   while (!is.null(dev.list())) {dev.off()}
-  # save graph object
-  graphs.list.func$plot.datagaps.2 <- plot.datagaps.2
 
   mettower.p.2 <- mettower %>% gather(key = "key", value = "value", -date, -Julian, -Year)
   select.var <- c("Tmax.tower", "Tmin.tower", "RHmax.tower", "RHmin.tower", "Rs.tower", "Precip.tower", "Ws.tower", "Bp.tower", "VPDmax.tower")
@@ -565,9 +563,12 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     facet_grid(key ~ ., scales = "free_y") +
     scale_x_continuous(breaks = seq(0, 366, by = 30)) +
     my.theme + my.bg + my.adjust + theme(panel.grid.major.x = element_blank()) +
-    ggtitle("SERC: Daily MetTower Tower-Top data - by year")
-  graph.3; ggsave(file.path("figures/daily_met_data_by_year_Tower-Top.pdf"), height = 12, width = 12, units='in')
-  graphs.list[[length(graphs.list) + 1]] <- graph.3
+    labs(colour = "Year") +
+    ggtitle("Daily Met Tower Tower Top data - by year")
+  graph.3;
+  #ggsave(file.path("figures/daily_met_data_by_year_Tower-Top.pdf"), height = 8, width = 12, units='in')
+  ggsave(file.path("figures/graph.3_daily_met_data_by_year_Tower-Top.png"), height = 6, width = 8, units='in', dpi = 400)
+
 
   missing(mettower)
   # var percent_missing
@@ -706,9 +707,10 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     ylab("") +
     xlab("year") + my.theme + my.bg + my.adjust + theme(axis.text.x = element_text(size = 10, face = "plain", angle = 90)) +
     scale_x_continuous(breaks = datayears) +
-    ggtitle("SERC: Annual summary met data (Met Tower-Top and ForestFloor)")
-  graph.4; ggsave(file.path("figures/annual_met_data.pdf"), height = 12, width = 12, units='in')
-  graphs.list[[length(graphs.list) + 1]] <- graph.4
+    ggtitle("Met Tower Annual summary met data: Tower Top and Forest Floor")
+  graph.4;
+  #ggsave(file.path("figures/annual_met_data.pdf"), height = 12, width = 12, units='in')
+  ggsave(file.path("figures/graph.4_annual_met_data.png"), height = 10, width = 8, units='in', dpi = 400)
 
   metbottom.filled <- select(metbottom.filled, -Year)
   # head((metbottom.filled)
@@ -731,9 +733,11 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     facet_grid(Variable ~ ., scales = "free_y") +
     scale_x_continuous(breaks = seq(0, 366, by = 30)) +
     my.theme + my.bg + my.adjust + theme(panel.grid.major.x = element_blank()) +
-    ggtitle("SERC: Daily MetTower ForestFloor data - by year - after gap filling")
-  graph.5; ggsave(file.path("figures/daily_met_data_by_year_forestfloor.pdf"), height = 12, width = 12, units='in')
-  graphs.list[[length(graphs.list) + 1]] <- graph.5
+    ggtitle("Daily Met Tower Forest Floor data - by year - after gap filling")
+  graph.5;
+  #ggsave(file.path("figures/daily_met_data_by_year_forestfloor.pdf"), height = 12, width = 12, units='in')
+  ggsave(file.path("figures/graph.5_daily_met_data_by_year_forestfloor.png"), height = 6, width = 8, units='in', dpi = 400)
+
 
   # plotting forest floor vs. top of the tower data
   daily2.1 <- subset(metbottom.filled, select = c("date", "Tmax.floor", "Tmin.floor", "RHmax.floor", "RHmin.floor", "Rs.floor"))
@@ -749,7 +753,7 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
                     timevar = "Variable", times = names(daily2.6)[2:ncol(daily2.6)])
   unique(daily5$Variable)
   # head((daily5)
-  daily5$location <- "TowerTop"
+  daily5$location <- "Tower Top"
   daily4 <- subset(daily4, select = c("date", "Variable", "Value", "location"))
   daily5 <- subset(daily5, select = c("date", "Variable", "Value", "location"))
   daily6 <- rbind.data.frame(daily4, daily5)
@@ -767,9 +771,11 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     facet_grid(Variable ~ ., scales = "free_y") +
     scale_x_continuous(breaks = seq(0, 366, by = 30)) +
     my.theme + my.bg + my.adjust + theme(panel.grid.major.x = element_blank()) +
-    ggtitle("SERC: Daily Met Tower data Tower Top vs. ForestFloor")
-  graph.6; ggsave(file.path("figures/Tower Top vs. Forest Floor.pdf"), height = 7, width = 12, units='in')
-  graphs.list[[length(graphs.list) + 1]] <- graph.6
+    ggtitle("Daily Met Tower data Tower Top vs. Forest Floor")
+  graph.6;
+  #ggsave(file.path("figures/Tower Top vs. Forest Floor.pdf"), height = 7, width = 12, units='in')
+  ggsave(file.path("figures/graph.6_Tower Top vs. Forest Floor.png"), height = 6, width = 8, units='in', dpi = 400)
+
 
   ##--------------------------------------
   ## Calculate and plot climatic means by location
@@ -790,17 +796,15 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     scale_x_continuous(breaks = seq(0, 366, by = 30)) +
     my.theme + my.bg + my.adjust + theme(panel.grid.major.x = element_blank()) +
     ylab("Daily mean +- SE") +
-    ggtitle("SERC: Met Tower data Tower Top vs. Forest Floor")
-  graph.7; ggsave(file.path("figures/Tower Top vs. Forest Floor_mean & SE.pdf"), height = 7, width = 12, units='in')
-  graphs.list[[length(graphs.list) + 1]] <- graph.7
+    ggtitle("Met Tower data Tower Top vs. Forest Floor")
+  graph.7;
+  #ggsave(file.path("figures/Tower Top vs. Forest Floor_mean & SE.pdf"), height = 7, width = 12, units='in')
+  ggsave(file.path("figures/graph.7_Tower Top vs. Forest Floor_mean & SE.png"), height = 6, width = 8, units='in')
 
   write.table(clim,
               "data-raw/climatic_mean.txt",
               row.names = FALSE)
   usethis::use_data(clim, overwrite = TRUE)
-  ## saving all graphs and graph functions
-  save(graphs.list, file = "figures/graphs.list.RDS")
-  save(graphs.list.func, file = "figures/graphs.list.func.RDS")
 
   devtools::document()
   devtools::install()

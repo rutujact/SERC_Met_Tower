@@ -1,11 +1,13 @@
 ---
-title: "MetTower Readme and Updater"
+title: "Met Tower Package Readme and Updater"
 author: "Rutuja Chitra-Tarak"
 date: "7/19/2019"
 output: html_document
 ---
 
 ```{r setup, include = FALSE, echo = TRUE, eval = TRUE, warning = FALSE, message = FALSE}
+  if (!require("pacman")) install.packages("pacman"); library(pacman)
+  pacman::p_load(knitr, png)
 ```
 
 ## How to update this package
@@ -69,7 +71,6 @@ This function is the main package function. It does a lot of data vetting and ge
 7. Finally, calculates and plots climatic mean and SE (for doy across years) for each variable.
 8. mettower package is installed and attached.
 
-#### The following chunk takes 45 min to run on Rutuja's 8GB RAM Intel Core i5
 
 ```{r, Chunk 3, eval = FALSE}
 # Refers to Chunk 3.2.b above
@@ -98,24 +99,7 @@ met.Rs.QC.3 <- rbind.data.frame(met.Rs.QC.1, met.Rs.QC.2)
 ##--
 source("data-raw/fun.mettower.R")
 # year as in the current year set above
-fun.mettower(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC)
-```
-
-
-```{r, Chunk 4, eval = FALSE}
-## Plotting graphs
-load(file = paste0("figures/graphs.list.Rda"))
-load(file = paste0("figures/graphs.list.func.Rda"))
-load(file = paste0("data/mettower.Rda"))
-load(file = paste0("data-raw/minute_data_all_years_metric_raw.Rda"))
-
-graphs.list[[1]]
-graphs.list$plot.datagaps.1(met3)
-graphs.list[[2]]
-graphs.list$plot.datagaps.2(mettower)
-for (i in 3: length(graphs.list)){
-  graphs.list[[i]]
-}
+fun.mettower(year = year, df_dict0 = df_dict0, met.Rs.QC.3 = met.Rs.QC.3)
 ```
 
 
@@ -167,16 +151,27 @@ VPDmax.floor | Daily Maximum Vapor Pressure Deficit at Forest Floor | kPa
 VPDmax.tower | Daily Maximum Vapor Pressure Deficit at Tower-Top | kPa
 
 
-```{r image-ref-for-in-text, echo = FALSE, message=FALSE, fig.align='center', fig.cap='Some cool caption', out.width='0.75\\linewidth', fig.pos='H'}
-knitr::include_graphics("figures/Tower Temp offset changes by 10 deg C 2017-03-09 onwards.pdf")
+```{r Chunk 4, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', fig.cap = "Temperature offset changes after 2017-03-09 onwards. Data before removing extreme values"}
+knitr::include_graphics("figures/graph.1_Tower Temp offset changes by 10 deg C 2017-03-09 onwards.png")
 ```
 
+```{r Chunk 5, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', fig.cap = "Rs data at Forest Floor has data gaps in the recent years. Data before removing extreme values."}
+knitr::include_graphics("figures/graph.2_Daily Met Tower cleaned Rs data from Pat Neale Tower Top & Forest floor.png")
+```
+```{r Chunk 6, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', fig.cap = "Daily met data at Tower Top after cleaning",}
+knitr::include_graphics("figures/graph.3_daily_met_data_by_year_Tower-Top.png")
+```
+```{r Chunk 7, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', fig.cap = "Annual summary met data afer cleaning",}
+knitr::include_graphics("figures/graph.4_annual_met_data.png")
+```
+```{r Chunk 8, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', fig.cap = "Daily Forest Floor data after gap-filling from Green house station"}
+knitr::include_graphics("figures/graph.5_daily_met_data_by_year_forestfloor.png")
+```
+```{r Chunk 9, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', fig.cap = "Seasonal contrast between Tower Top and Forest Floor, daily data after cleaning and gap filling (only for forest floor)"}
+knitr::include_graphics("figures/graph.6_Tower Top vs. Forest Floor.png")
+```
+```{r Chunk 10, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', fig.cap = "Climatic mean +- SE for Tower Top and Forest Floor showing seasonal contrast (cleaned and, for forest floor, gap-filled data)"}
+knitr::include_graphics("figures/graph.7_Tower Top vs. Forest Floor_mean & SE.png")
 
-"figures/mettower Raw Data Daily Means in SI units.pdf"
-"figures/Daily MetTower cleaned Rs data from Pat Neale Tower-Top & Forest floor.pdf"
-"figures/mettower_daily_gap.pdf"
-"figures/daily_met_data_by_year_Tower-Top.pdf"
-"figures/annual_met_data.pdf"
-"figures/daily_met_data_by_year_forestfloor.pdf"
-"figures/Tower Top vs. Forest Floor.pdf"
-"figures/Tower Top vs. Forest Floor_mean & SE.pdf"
+
+
