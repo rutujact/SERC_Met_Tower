@@ -5,8 +5,7 @@
 ##----------------
 #
 # rm(list = ls())
-fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC,
-                         include.figures = include.figures) {
+fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC) {
 
   if (!require("pacman")) install.packages("pacman"); library(pacman)
   pacman::p_load(tidyverse, scales, janitor, lubridate, usethis, devtools,
@@ -24,12 +23,12 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   # year <- 2019
   load(file = paste0("data-raw/minute_data_", paste(2003, year, sep = "-"), ".Rda"))
   datayears <- c(2003: year)
-  head(met2); tail(met2)
+  # head((met2); tail(met2)
   met2 <- met2
   #remove rows with all NAs
-  nrow(met2)
+  # nrow(met2)
   met2 <- met2[rowSums(is.na(met2)) != ncol(met2), ]
-  nrow(met2)
+  # nrow(met2)
 
   unique(met2$Year)
   ## all the non-i year data seems to be erroneously present, removing that. (typically just one day)
@@ -38,7 +37,7 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   # # Locating that area
   ## Well, not fixing that right now. just removing those data
   met2 <- met2[met2$Year %in% datayears, ]
-  nrow(met2)
+  # nrow(met2)
 
   ## climatedata should contain variables as follows
   # Tmax - daily maximum temperature in degree Celcius,
@@ -67,7 +66,7 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   # tail(unique(met2$Hour))
 
   met2 <- met2[!duplicated(met2$date.time),]
-  head(met2);
+  # head((met2);
   dim(met2)
   met2 <- met2[order(met2$date, met2$date.time),]
   met3 <- setNames(data.frame(matrix(ncol = ncol(met2), nrow = nrow(met2))), colnames(met2))
@@ -80,8 +79,8 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   ##------------------------------
 
   #****Do not repeat the conversions***
-  # Units in which data is collected is given in "literature/Column_Headers_SERC_weather_data" taken from folder "Data/SERC_Met_Data/MET_TOWER"
-  str(met2);
+  # Units in which data is collected is given in "literature/Column_# head(ers_SERC_weather_data" taken from folder "Data/SERC_Met_Data/MET_TOWER"
+  # str(met2);
   met3$Temp.floor <- as.numeric(met2$Temp.floor)
   met3$Temp.floor <-
     met2$Temp.floor * 100 - 40 # Volts to degree celcius
@@ -98,12 +97,12 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   met3$Rs.tower <-
     met2$Rs.tower * 10 ^ 6 / 6  * 0.0864 #Volts to W/m-2 to MJ/m2/day (0.0864 multiplier does the last conversion) # 0.2 W/m2should be normal per minute
   #----------------
-  summary(met3)
-  head(met3)
+  # summary(met3)
+  # head((met3)
   ## removing rows with all NAs
-  nrow(met3)
+  # nrow(met3)
   met3 <- met3[rowSums(is.na(met3)) != ncol(met3), ]
-  nrow(met3)
+  # nrow(met3)
 
   ##  ****Tower temperature offset ****-------
   # Notes from data-raw/MetTower_T RH Record Documentation_Pat_Neale/Readme for Tower and Forest Floor Temperature and Relative Humidity data.doc
@@ -123,65 +122,76 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
                             "Before 10 deg C offset", "After 10 deg C offset"),
            variable = "Tmax",
            offset = fct_relevel(offset, "After 10 deg C offset", after = 1))
-  head(daily.Temp)
-  ggplot(daily.Temp, aes(x = date, y = value)) +
+  # head((daily.Temp)
+  graph.1 <- ggplot(daily.Temp, aes(x = date, y = value)) +
     geom_point()+
     ylim(c(df_dict0$out_low[which(df_dict0$variable == "Temp.tower")],
            df_dict0$out_high[which(df_dict0$variable == "Temp.tower")])) +
     ylab("degree C") + xlab("Date") +
     facet_grid(. ~ offset) +
     ggtitle("Tower-Top Temp offset changes by 10 deg C 2017-03-09 onwards")
-  if (include.figures == FALSE) ggsave(file.path("figures/Tower Temp offset changes by 10 deg C 2017-03-09 onwards.pdf"), height = 12, width = 12, units='in')
+
+  graph.1; ggsave(file.path("figures/Tower Temp offset changes by 10 deg C 2017-03-09 onwards.pdf"), height = 12, width = 12, units='in')
+  # save graph object
+  graphs.list <- list();
+  graphs.list[[length(graphs.list) + 1]] <- graph.1
+
   met3 <- met3 %>% select(-Temp.tower.before) %>%
     mutate(date = as.Date(date),
            Julian =
              as.numeric(format(date, format = "%j")))
-  save(met3, file = paste0("data-raw/minute_data_all_years_metric_raw.Rda"))
+  save(met3, file = "data-raw/minute_data_all_years_metric_raw.Rda")
   # met3 %>% select(-Year, -Julian, Rs,floor, Rs.tower) %>%
   #   group_by(date) %>% summarise_all(list(~mean(., na.rm = T)))
 
-  met3.p <- met3 %>% select(-Year, -Julian, -Hour, -date.time) %>%
-    group_by(date) %>%
-    summarise_all(list(~mean(., na.rm = T))) %>%
-    gather(key = "key", value = "value", -date)
-  xyplot(value ~ date | key, data = met3.p, scales = list(
+  plot.datagaps.1 <- function(mydata) {
+    mydata.p <- mydata %>% select(-Year, -Julian, -Hour, -date.time) %>%
+      group_by(date) %>%
+      summarise_all(list(~mean(., na.rm = T))) %>%
+      gather(key = "key", value = "value", -date)
+
+    xyplot(value ~ date | key, data = mydata.p, scales = list(
     y = list(relation='free')),
     type = c("l"), main = "Mettower Raw Data Daily Means in SI units") +
     layer_(panel.xblocks(x, is.na(y), col = "darkgray"))
-  if (include.figures == FALSE) {dev.copy(pdf,"figures/mettower Raw Data Daily Means in SI units.pdf",  height = 9, width = 12)
-    while (!is.null(dev.list()))  dev.off() }
+  }
+  pdf("figures/mettower Raw Data Daily Means in SI units.pdf",  height = 9, width = 12)
+  plot.datagaps.1(met3)
+  while (!is.null(dev.list()))  {dev.off()}
+  graphs.list.func <- list()
+  graphs.list.func$plot.datagaps.1 <- plot.datagaps.1
 
   ###--------------------------------------------
   ### Substituting clean Rs data from Pat Neale--
   ###--------------------------------------------
-  load(file = paste0("data-raw/minute_data_all_years_metric_raw.Rda"))
+  load(file = "data-raw/minute_data_all_years_metric_raw.Rda")
 
   met4 <- met3; rm(met3)
 
-  # View(head(met4[which(met4$date %in% tower.bad.data.dates),]))
+  # View(# head((met4[which(met4$date %in% tower.bad.data.dates),]))
   ### from Pat Neale QA,QCd Met Rs data------------
   # met.Rs.QC.1 <- read.csv("data-raw/MetTower_Rs_data_from_Pat_Neale/TowerWoodsPSP02_17.csv",
   #                       na.strings = c("NA", "NaN", ""),
-  #                       header = FALSE,
+  #                       # head(er = FALSE,
   #                       row.names = NULL,
   #                       check.names = F)
   # met.Rs.QC.2 <- read.csv("data-raw/MetTower_Rs_data_from_Pat_Neale/TowerWoodsPSP18.csv",
   #                       na.strings = c("NA", "NaN", ""),
-  #                       header = FALSE,
+  #                       # head(er = FALSE,
   #                       row.names = NULL,
   #                       check.names = F)
   # met.Rs.QC <- bind_rows(met.Rs.QC.1, met.Rs.QC.2)
   # For the PSP data, the file has day number (excel format), time
   # as HHMM integer, then Rs W m-2 for tower and forest floor. NaN’s replace any
   # “bad”points, this includes all points with Rs < 0 for forest floor.
-  met.Rs.QC <- met.Rs.QC.3; rm(met.Rs.QC.3, met.Rs.QC.1, met.Rs.QC.2)
+  met.Rs.QC <- met.Rs.QC.3
   colnames(met.Rs.QC) <- c("date", "time", "Rs.tower", "Rs.floor")
-  head(met.Rs.QC)
+  # head((met.Rs.QC)
   met.Rs.QC$date <- excel_numeric_to_date(as.numeric(met.Rs.QC$date), include_time = FALSE)
   met.Rs.QC$Hour2 <- formatC(as.numeric(met.Rs.QC$time),  width = 4, flag = "0")
   met.Rs.QC$date.time <- as.POSIXct(strptime(paste(as.character(met.Rs.QC$date), met.Rs.QC$Hour2, sep = "-"),
                                              format = "%Y-%m-%d-%H%M"))
-  str(met.Rs.QC)
+  # str(met.Rs.QC)
   met.Rs.QC <- select(met.Rs.QC, -Hour2, -time)
   met.Rs.QC$Rs.tower <- met.Rs.QC$Rs.tower * 0.0864  # from W/m2 to MJ m-2 day-1
   met.Rs.QC$Rs.floor <- met.Rs.QC$Rs.floor * 0.0864  # from W/m2 to MJ m-2 day-1
@@ -194,13 +204,13 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   met.Rs.QC.p <- met.Rs.QC %>% select(date, Rs.floor, Rs.tower) %>%
     group_by(date) %>% summarise_all(list(~mean(., na.rm = T))) %>%
     gather(key = "key", value = "value", -date)
-  ggplot(met.Rs.QC.p, aes(x = date, y = value)) +
+   graph.2 <-  ggplot(met.Rs.QC.p, aes(x = date, y = value)) +
     geom_line() + ylab("MJ m-2 day-1") + xlab("Date") +
     facet_grid(key ~ ., scales = "free_y") +
     my.theme + my.bg + my.adjust + theme(panel.grid.major.x = element_blank()) +
     ggtitle("SERC: Daily MetTower cleaned Rs data from Pat Neale Tower-Top & Forest floor")
-  if (include.figures == FALSE) ggsave(file.path("figures/Daily MetTower cleaned Rs data from Pat Neale Tower-Top & Forest floor.pdf"), height = 12, width = 12, units='in')
-
+   graph.2; ggsave(file.path("figures/Daily MetTower cleaned Rs data from Pat Neale Tower-Top & Forest floor.pdf"), height = 12, width = 12, units='in')
+   graphs.list[[length(graphs.list) + 1]] <- graph.2
   ## making space
   rm(met2)
   ## making space
@@ -281,8 +291,8 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     # update progress bar
     setTxtProgressBar(pb, i)
   }
-  summary(met4)
-  nrow(met4)
+  # summary(met4)
+  # nrow(met4)
   met4 <- met4[rowSums(is.na(met4)) != ncol(met4), ]
   # Also seasonally:
   ## Tmax in summer below 4 looks unaccetable
@@ -300,12 +310,12 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   usethis::use_data(mettower_minute, overwrite = TRUE) # for smaller size use compress = 'xz'
   load("data/mettower_minute.Rda")
 
-  head(mettower_minute)
-  str(mettower_minute)
+  # head((mettower_minute)
+  # str(mettower_minute)
   missing <- function (x) {
     df <- data.frame(var = colnames(x), percent_missing = NA)
     for (i in 1:ncol(x)) {
-      df[i, 2] <- round(length(which(is.na(x[[i]]))) / nrow(x) * 100, 3)
+      df[i, 2] <- round(length(which(is.na(x[[i]]))) /nrow(x) * 100, 3)
     }
     print(df)
   }
@@ -335,7 +345,7 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
                                                -RHmax.floor, -Tmax.floor, -Tmax.tower, -RHmax.tower)
   metmin.neon <- left_join(mettower_minute, neon.sub, by = "date.time")
   metmin.neon.sub <- metmin.neon %>% subset(date > min(neon.sub$date))
-  head(metmin.neon)
+  # head((metmin.neon)
 
   metmin.filled <- metmin.neon
   vars.met <- c("Temp.tower", "RH.tower", "Rs.tower.x", "Temp.floor", "RH.floor", "Bp.tower.x")
@@ -438,8 +448,8 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   # 17     SVP.floor           8.721
   # 18     VPD.tower           5.243
   # 19     VPD.floor           8.721
-  summary(metmin.filled)
-  nrow(metmin.filled)
+  # summary(metmin.filled)
+  # nrow(metmin.filled)
   # usethis::use_data(metmin.filled, overwrite = TRUE)
 
 
@@ -477,7 +487,7 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   daily1 <-
     do.call(data.frame, lapply(daily0, function(x)
       replace(x, is.infinite(x), NA)))
-  summary(daily1)
+  # summary(daily1)
 
   from <- min(as.Date(daily1$date))
   to <- as.Date(daily1$date[length(daily1$date)])
@@ -528,29 +538,36 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   ## Tmin in summer below 0 looks unaccetable
   daily2$Tmin.floor[daily2$Julian > 150 & daily2$Julian < 270 & daily2$Tmin.floor < 0] <- NA
   daily2$Tmin.tower[daily2$Julian > 150 & daily2$Julian < 270 & daily2$Tmin.tower < 0] <- NA
-  summary(daily2)
+  # summary(daily2)
   mettower <- daily2
   write.table(mettower, "data-raw/mettower.txt", row.names = F)
-  # mettower <- read.table("data-raw/mettower.txt", header = TRUE)
+  # mettower <- read.table("data-raw/mettower.txt", # head(er = TRUE)
   usethis::use_data(mettower, overwrite = TRUE)
   load("data/mettower.Rda")
 
-  mettower.p <- mettower %>% select(-Year, -Julian) %>% gather(key = "key", value = "value", -date)
-  xyplot(value ~ date | key, data = mettower.p, scales = list(
+  plot.datagaps.2 <- function(mydata) {
+  mydata.p <- mydata %>% select(-Year, -Julian) %>% gather(key = "key", value = "value", -date)
+  xyplot(value ~ date | key, data = mydata.p, scales = list(
     y=list(relation='free')),
     type = c("l"), main = "Mettower Daily Data gaps") +
     layer_(panel.xblocks(x, is.na(y), col = "darkgray"))
-  if (include.figures == FALSE) {dev.copy(pdf,"figures/mettower_daily_gap.pdf",  height = 9, width = 12)
-    while (!is.null(dev.list()))  dev.off()}
+  }
+  pdf("figures/mettower_daily_gap.pdf",  height = 9, width = 12)
+  plot.datagaps.2(mettower)
+  while (!is.null(dev.list())) {dev.off()}
+  # save graph object
+  graphs.list.func$plot.datagaps.2 <- plot.datagaps.2
+
   mettower.p.2 <- mettower %>% gather(key = "key", value = "value", -date, -Julian, -Year)
   select.var <- c("Tmax.tower", "Tmin.tower", "RHmax.tower", "RHmin.tower", "Rs.tower", "Precip.tower", "Ws.tower", "Bp.tower", "VPDmax.tower")
-  ggplot(subset(mettower.p.2, key %in% select.var), aes(x = Julian, y = value, color = as.factor(Year))) +
+  graph.3 <-  ggplot(subset(mettower.p.2, key %in% select.var), aes(x = Julian, y = value, color = as.factor(Year))) +
     geom_line(aes(x = Julian, y = value, group = Year)) +
     facet_grid(key ~ ., scales = "free_y") +
     scale_x_continuous(breaks = seq(0, 366, by = 30)) +
     my.theme + my.bg + my.adjust + theme(panel.grid.major.x = element_blank()) +
     ggtitle("SERC: Daily MetTower Tower-Top data - by year")
-  if (include.figures == FALSE) ggsave(file.path("figures/daily_met_data_by_year_Tower-Top.pdf"), height = 12, width = 12, units='in')
+  graph.3; ggsave(file.path("figures/daily_met_data_by_year_Tower-Top.pdf"), height = 12, width = 12, units='in')
+  graphs.list[[length(graphs.list) + 1]] <- graph.3
 
   missing(mettower)
   # var percent_missing
@@ -580,9 +597,9 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   ##--------------------------------------
   ## green generated by 2.0 SERC_greenhouse_weather_data.R in SERC_hydro-met_data project
   green <- readRDS("data-raw/greenhouse_weather_data_my_daily_aggregation_2011-2017.RDS")
-  head(green)
+  # head((green)
   missing(green)
-  str(green)
+  # str(green)
 
   # var percent_missing
   # 1    date            0.00
@@ -599,7 +616,7 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
 
 
   met.green <- left_join(mettower, green, by = "date")
-  head(met.green)
+  # head((met.green)
   # View(met.green)
   met.green$Precip.floor[is.na(met.green$Precip.floor)] <- met.green$Precip[is.na(met.green$Precip.floor)]
   met.green$Tmax.floor[is.na(met.green$Tmax.floor)] <- met.green$Tmax[is.na(met.green$Tmax.floor)]
@@ -675,14 +692,14 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     summarise_at(vars(Precip.tower), list(~sum(., na.rm = TRUE)))
 
   meteo.year <- left_join(meteo.year1, meteo.year2, by = "Y")
-  head(meteo.year)
+  # head((meteo.year)
   library(reshape2)
   meteo.year.long <- melt(meteo.year, id.vars = colnames(meteo.year)[1], variable.name = "variable", value.name = "value")
-  str(meteo.year.long)
+  # str(meteo.year.long)
 
-  summary(subset(meteo.year, Y %in% datayears))
+  # summary(subset(meteo.year, Y %in% datayears))
 
-  ggplot(subset(meteo.year.long, Y != max(datayears)), aes(x = Y, y = value)) +
+  graph.4 <-  ggplot(subset(meteo.year.long, Y != max(datayears)), aes(x = Y, y = value)) +
     geom_line(aes(color = variable), show.legend = F) +
     geom_point(aes(color = variable), size = 1, show.legend = F) +
     facet_grid(variable ~ ., scales = "free_y") +
@@ -690,13 +707,14 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     xlab("year") + my.theme + my.bg + my.adjust + theme(axis.text.x = element_text(size = 10, face = "plain", angle = 90)) +
     scale_x_continuous(breaks = datayears) +
     ggtitle("SERC: Annual summary met data (Met Tower-Top and ForestFloor)")
-  if (include.figures == FALSE) ggsave(file.path("figures/annual_met_data.pdf"), height = 12, width = 12, units='in')
+  graph.4; ggsave(file.path("figures/annual_met_data.pdf"), height = 12, width = 12, units='in')
+  graphs.list[[length(graphs.list) + 1]] <- graph.4
 
   metbottom.filled <- select(metbottom.filled, -Year)
-  head(metbottom.filled)
+  # head((metbottom.filled)
   daily3 <- reshape(metbottom.filled, varying = 2:ncol(metbottom.filled), idvar = "date", direction = "long", v.names = "Value",
                     timevar = "Variable", times = names(metbottom.filled)[-1])
-  head(daily3)
+  # head((daily3)
 
   daily3$date <- as.Date(daily3$date)
   daily3$Year <-
@@ -705,37 +723,38 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     format(daily3$date, format = "%m")
   daily3$Julian <-
     as.numeric(format(daily3$date, format = "%j"))
-  str(daily3)
+  # str(daily3)
 
   select.var = c("Tmax.floor", "Tmin.floor", "RHmax.floor", "RHmin.floor", "Rs.floor", "VPDmax.floor")
-  ggplot(subset(daily3, Variable %in% select.var), aes(x = Julian, y = Value, color = Year)) +
+   graph.5 <-  ggplot(subset(daily3, Variable %in% select.var), aes(x = Julian, y = Value, color = Year)) +
     geom_line(aes(x = Julian, y = Value, group = Year)) +
     facet_grid(Variable ~ ., scales = "free_y") +
     scale_x_continuous(breaks = seq(0, 366, by = 30)) +
     my.theme + my.bg + my.adjust + theme(panel.grid.major.x = element_blank()) +
     ggtitle("SERC: Daily MetTower ForestFloor data - by year - after gap filling")
-  if (include.figures == FALSE) ggsave(file.path("figures/daily_met_data_by_year_forestfloor.pdf"), height = 12, width = 12, units='in')
+  graph.5; ggsave(file.path("figures/daily_met_data_by_year_forestfloor.pdf"), height = 12, width = 12, units='in')
+  graphs.list[[length(graphs.list) + 1]] <- graph.5
 
   # plotting forest floor vs. top of the tower data
   daily2.1 <- subset(metbottom.filled, select = c("date", "Tmax.floor", "Tmin.floor", "RHmax.floor", "RHmin.floor", "Rs.floor"))
   colnames(daily2.1) <-  c("date", "Tmax", "Tmin", "RHmax", "RHmin", "Rs")
   daily4 <- reshape(daily2.1, varying = 2:ncol(daily2.1), idvar = "date", direction = "long", v.names = "Value",
                     timevar = "Variable", times = names(daily2.1)[2:ncol(daily2.1)])
-  head(daily4)
+  # head((daily4)
   daily4$location <- "Forest Floor"
   daily2.6 <- subset(metbottom.filled, select = c("date","Tmax.tower", "Tmin.tower", "RHmax.tower", "RHmin.tower", "Rs.tower", "Precip.tower", "Ws.tower"))
   colnames(daily2.6) <-  c("date","Tmax", "Tmin", "RHmax", "RHmin", "Rs", "Precip", "Ws")
-  head(daily2.6)
+  # head((daily2.6)
   daily5 <- reshape(daily2.6, varying = 2:ncol(daily2.6), idvar = "date", direction = "long", v.names = "Value",
                     timevar = "Variable", times = names(daily2.6)[2:ncol(daily2.6)])
   unique(daily5$Variable)
-  head(daily5)
+  # head((daily5)
   daily5$location <- "TowerTop"
   daily4 <- subset(daily4, select = c("date", "Variable", "Value", "location"))
   daily5 <- subset(daily5, select = c("date", "Variable", "Value", "location"))
   daily6 <- rbind.data.frame(daily4, daily5)
 
-  str(daily6)
+  # str(daily6)
   daily6$Julian <-
     as.numeric(format(daily6$date, format = "%j"))
   daily6$Year <-
@@ -743,13 +762,14 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
   daily6$year.location <- paste(daily6$Year, daily6$location, sep = ".")
   daily6 <- daily6[order(daily6$location, daily6$Year),]
 
-  ggplot(daily6, aes(x = Julian, y = Value, color = location)) +
+  graph.6 <-  ggplot(daily6, aes(x = Julian, y = Value, color = location)) +
     geom_line(aes(x = Julian, y = Value, group = year.location)) +
     facet_grid(Variable ~ ., scales = "free_y") +
     scale_x_continuous(breaks = seq(0, 366, by = 30)) +
     my.theme + my.bg + my.adjust + theme(panel.grid.major.x = element_blank()) +
     ggtitle("SERC: Daily Met Tower data Tower Top vs. ForestFloor")
-  if (include.figures == FALSE) ggsave(file.path("figures/Tower Top vs. Forest Floor.pdf"), height = 7, width = 12, units='in')
+  graph.6; ggsave(file.path("figures/Tower Top vs. Forest Floor.pdf"), height = 7, width = 12, units='in')
+  graphs.list[[length(graphs.list) + 1]] <- graph.6
 
   ##--------------------------------------
   ## Calculate and plot climatic means by location
@@ -762,8 +782,8 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
                                           n = ~sum(!is.na(.))))
   clim$se = clim$sd/sqrt(clim$n)
   #
-  head(clim)
-  ggplot(clim, aes(x = Julian, y = mean, color = location)) +
+  # head((clim)
+  graph.7 <- ggplot(clim, aes(x = Julian, y = mean, color = location)) +
     geom_line() +
     geom_errorbar(aes(ymax = mean + se, ymin = mean - se)) +
     facet_grid(Variable ~ ., scales = "free_y") +
@@ -771,12 +791,17 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0, met.Rs.QC = met.Rs.QC
     my.theme + my.bg + my.adjust + theme(panel.grid.major.x = element_blank()) +
     ylab("Daily mean +- SE") +
     ggtitle("SERC: Met Tower data Tower Top vs. Forest Floor")
-  if (include.figures == FALSE) ggsave(file.path("figures/Tower Top vs. Forest Floor_mean & SE.pdf"), height = 7, width = 12, units='in')
+  graph.7; ggsave(file.path("figures/Tower Top vs. Forest Floor_mean & SE.pdf"), height = 7, width = 12, units='in')
+  graphs.list[[length(graphs.list) + 1]] <- graph.7
 
   write.table(clim,
               "data-raw/climatic_mean.txt",
               row.names = FALSE)
   usethis::use_data(clim, overwrite = TRUE)
+  ## saving all graphs and graph functions
+  save(graphs.list, file = "figures/graphs.list.RDS")
+  save(graphs.list.func, file = "figures/graphs.list.func.RDS")
+
   devtools::document()
   devtools::install()
 }
