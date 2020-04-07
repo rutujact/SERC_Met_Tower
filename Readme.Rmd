@@ -71,6 +71,9 @@ Tmin.tower[Julian > 150 & Julian < 270 & Tmin.tower < 0] <- NA
 
 -This data should be cited as: Chitra-Tarak, Rutuja, Sean M. McMahon, Patrick J. Neale. Smithsonian Online Libraries. A data-package for the Smithsonian Environmental Research Center, Maryland high resolution meteorological tower data. 2002-2019 DOI: 10.25573/serc.11020646.v3
 
+-Code associated with this dataset area available on Github at 
+https://github.com/rutujact/SERC_Met_Tower
+
 ##### Table 1 Data products in this package {#datafiles}
 Files are provided in both .Rda and .h5 formats.
 
