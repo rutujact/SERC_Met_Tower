@@ -21,7 +21,7 @@ fun.get_minute_by_year <-
     pacman::p_load(tidyverse, data.table, rlist)
 
     if (old.years == TRUE) {
-      years.on <- c(2003:year)
+      years.on <- c(2002:year)
     } else {
       years.on <- year
     }
@@ -140,7 +140,7 @@ fun.minute_by_year_into_one_file <-
     pacman::p_load(tidyverse)
 
     max.prev.years <- year - 1
-    prev.years <- c(2003:max.prev.years)
+    prev.years <- c(2002:max.prev.years)
     curr.years <- c(year)
     datayears <- c(prev.years, curr.years)
     # --------------------------------------------------------------
@@ -278,7 +278,7 @@ fun.minute_by_year_into_one_file <-
         "RH.floor",
         "Rs.floor",
         "Precip.tower",
-        "uz.tower",
+        "Ws.tower",
         "Bp.tower",
         "Temp.tower",
         "RH.tower",

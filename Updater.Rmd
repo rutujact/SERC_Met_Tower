@@ -1,0 +1,178 @@
+---
+title: "Updater"
+author:
+- Rutuja Chitra-Tarak
+- Sean M. McMahon
+- Patrick Neale
+date: "`r format(Sys.time(), '%B-%d-%Y')`"
+output:
+  pdf_document: default
+  html_document: default
+oa: Rutuja Chitra-Tarak
+---
+
+```{r setup, include = FALSE, echo = TRUE, eval = TRUE, warning = FALSE, message = FALSE}
+  if (!require("pacman")) install.packages("pacman"); library(pacman)
+  pacman::p_load(knitr, png, kableExtra)
+```
+
+## How to update this package
+
+This package and R Markdown file are designed to download, amend, vett, and gap fill SERC meteorological data. The first goal of this document is to produce a large, multi-year minute-scale file of key climate variables (or amend the existing minute file as compiling the file from daily minute data over many years is time-consuming). It can be updated by knitting this file (with eval = TRUE in opts_chunk above). In order to update to the latest year you will have to (1) set the current 'year' in section 1, as well as set the 'from.copy.path' to the local path of MET_TOWER folder, and (2) add Pat Neal's QAQCd radiation data file location in section 3; if there is a new file for the latest year (last version was through 2018).
+
+### 1. fun.get_minute_by_year()
+
+This function pulls minute data from MetTower folder, where it is downloaded (typically monthly) from the Photobio lab shared folder. The daily minute data is collected into files of yearly minute-scale data and copied to a folder *minute_by_year* in the *data-raw* directory.  Often only data for the current, incomplete year needs to be collated. Avoid compiling earlier years again, as it takes a long time.
+
+```{r, Chunk 1, eval = FALSE}
+# Set current year
+# If you wish to collate older years too, then turn old.years = TRUE
+year <- 2020
+# from.copy.path <- "/MET_TOWER/" 
+# The following is a Smithsonian internal reference to the path 
+# https://www.dropbox.com/work/Work_at_SERC/Data/SERC_Met_data/MET_TOWER, 
+# where raw tower data is manually downloaded.
+# Without referring to this, the current mettower package won't be updated.
+from.copy.path <-  "/Users/rutuja/Dropbox (Smithsonian)/Work_at_SERC/Data/SERC_Met_data/MET_TOWER/"
+old.years <- FALSE
+source("code/functions_to_source_data.R")
+fun.get_minute_by_year(year = year, from.copy.path = from.copy.path, old.years = old.years)
+```
+
+### 2. fun.minute_by_year_into_one_file()
+
+This function combines minute data by year files into one single large file, named with initial and last years. Often only the current year needs to be appended to the older multi-year file to generate a new one.
+
+```{r, Chunk 2, eval = FALSE}
+# older file is identified as 2002- (year - 1)
+# year set as in the current year above
+# if you wish to collate older years too, then turn old.years = TRUE
+source("code/functions_to_source_data.R")
+# old.years <- FALSE # taken as set in Chunk 1
+fun.minute_by_year_into_one_file(year = year, old.years = old.years)
+```
+
+### 3. fun.mettower()
+
+This function is the main package function. It does a lot of data vetting and generates .Rda data and installs the package. The primary issues relate to instrument degradation and replacements. There are two fundamental instrument collections, one on the top of the SERC Met Tower and the other in the forest floor near the tower. The following details the key changes in Tower and Forest Floor Temperature and Relative Humidity.
+
+Measurements at both locations were made with a Vaisala HMP45AC housed in passively ventilated enclosures. Measurements began in 2002 with new units. Tower measurements were shifted to a RM Young 41382 Fan Aspirated unit on March-9-2017.
+
+**** NOTE  **** The HMP45AC and RMY 41282 have different temperature offsets -40° and -50°, respectively
+
+**Tower record:**
+
+Record is basically continuous from 2002 to 2015.  By 2015 it was noted that the tower RH was regularly >> 100% during rain/fog (e.g. in the 105-110% range).  Appears to have been a progressive degradation in sensor performance over the deployment, probably minimal up to 2014.   The tower HMP45AC was sent for calibration on August-24-2015, thus no readings for the period August-24-2015 to September-12-2015.  The calibration for RH only went to 75% RH and one point temperature, (see file “HMP45AC Cal August 2015”).  Unexpectedly (given observation of over-range readings) the unit was found to be reading 5% too low at 33% and 6.6% too low at 75%.  Temperature was within specification (±0.1°C uncertainty). The RH sensor was adjusted to read correctly over the test range and was put back in service after calibration.  However, the sensor still read over-range under high humidity conditions, and when the RH was in the over-range state, temperature readings were too low (Plot Tower and Annap Naval Acad Temp – early part of record has >100% RH reading).  The sensor was again taken out of service on October-19-2015 and sent to Vaisala, RH sensor was determined to have a non-linear response and was replaced (see file “HMP45AC Cal October 2015”).  The low temperature during high RH probably occurred because of condensation on the sensor surface.  Unit was placed back in service on November-13-2015 and RH readings appeared to be within normal limits until August-2-2016, after which time humidity reading started to progressively get higher, eventually exceeding 110% during rain/fog (Figure - Relative Humidity reading of Tower sensor November-4-2015 through October-5-2016).  Temperature readings during times with these “over range” readings were also too low (when compared with other area temperature readings).  On January-3-2017, the sensor started giving “Inf” RH so was taken out of service.
+
+On March-9-2017, a RM Young 41382 T/RH unit was put in operation on the tower.  The unit was formerly used on a forest canopy tower operated by Jess Parker.  Temperature response was tested before installation and found to be within specification.  This is an active (fan) aspirated enclosure with a Rotronics Temperature/RH sensor.  Operation continues to present.  In the future, the intention is to install a second 41382 unit on the tower to provide measurement redundancy.
+
+
+**Forest Floor:**
+
+Record looks good for both T and RH up through August-1-2013.  After that period. the FF temperature started to read low, i.e. there were no longer observed times in which the tower and FF read the same (difference near zero), expected when there is sufficient wind and no leaves.  For example, see plots for Tower and FF temperature 2012 (Figure Tower and Forest Floor Temperature 2012) compared to 2014 (Figure Tower and Forest Floor Temperature 2014).  The anomalously low FF temperatures were not noticed until mid-summer 2014.  The probe was examined and cleaned in the fall of 2014, yet readings continued to be low.  However, beginning in 2015, readings went back to normal (Figure Tower and Forest Floor Temperature Early 2015), i.e. matched the tower readings at times.  Additional comparison since then with forest floor measurements at the NEON site were also favorable (Figure SERC NEON forest floor temperature). The Forest Floor T/RH record comprises until October-26-2017, when a 41382 aspirated T/RH unit was deployed nearby (~2 m away), with data acquisition to a separate Campbell unit.  This data is used for Forest Floor T/RH from October-26-2017. Data acquisition from the HMP45AC continued into 2018, but it started showing failure symptoms (very high RH and anomalously low T) after April.  Given this and the probe previous problems in 2013-2014, the 2015-2017 record should be used with caution.
+15 and RH readings appeared to be within normal limits until August-2-2016, after which time humidity reading started to progressively get higher, eventually exceeding 110% during rain/fog (Figure - Relative Humidity reading of Tower sensor November-4-2015 thru October-5-2016).  Temperature readings during times with these “over range” readings were also too low (when compared with other area temperature readings).  On January-3-2017, the sensor started giving “Inf” RH so was taken out of service.
+
+
+Specific changes *fun.mettower()* makes follow:
+
+1. Reads in and substitutes radiation QAQCd data:
+  Currently until year 2018. Converts mettower minute data above into desired units as in Readme.html Table 2.
+
+2. Cleans by removing:
+    a. Data in date range within which it is known to be bad, as given in "data-raw/MetTower_T RH Record Documentation_Pat_Neale").
+        Note that years worth of data are missing: For Forest Floor Temperature and Relative Humidity readings problematic from August 1, 2013 until end of 2014.
+        For Tower Top Temperature and Relative Humidity readings are problematic from Jan 2015 - March 9, 2017 (new unit since 3/9/2017).
+        Relative humidity for the forest floor switches intruments in January 1, 2018
+        Temp.tower is removed when RH.tower > 100 during January-01-2015 to November-13-2015 and August-02-2016 to March-09-2017. RH.tower is flagged in column tower.RH.Flag as 0 from January-01-2015 to November-13-2015 (records ~ 6% lower RH), while from August-02-2016 to March-09-2017 RH.tower is removed.
+        SVP/Saturated Vapor Pressure is derived using Temp and RH based on Buck's equation.
+    b. Data beyond acceptable range across all period as in Readme.html Table 2. Out of 750K and 270K respectively.
+
+
+Variable | Lower limit | Upper limit  | Threshold Value | Obs. removed
+-------- | --------- | ---------|---------| --------
+Precip.tower |     0  |    300     | 0
+    Ws.tower |     0  |     50     | 0
+    Bp.tower |    90  |    104     | 12701
+    Rs.floor |   -10  |   1500     | 55
+    Rs.tower |   -10  |   1500     | 14
+  Temp.floor |   -25  |     50     | 23608
+  Temp.tower |   -25  |     50     | 144213
+    RH.floor |     10 |    100     | 9792 # need to correct for new value
+    RH.tower |     10 |    100     | 26564
+   SVP.floor |     0  |     10     | 2
+   SVP.tower |     0  |     10     | 0
+
+
+
+Variable | Lower limit (DOY) | Upper limit (DOY) | Threshold Value | Obs. removed
+-------- | --------- | ---------|---------| --------
+Temp.floor | 100 | 150 | < 0 $^\circ$C | 0
+Temp.tower | 100 | 150 | < 0 $^\circ$C | 2
+Temp.floor | 150 | 270 | < 4 $^\circ$C | 5
+Temp.tower | 150 | 270 | < 4 $^\circ$C | 124
+Temp.floor | 270 | 330 | < -10 $^\circ$C | 1
+Temp.tower | 270 | 330 | < -10 $^\circ$C | 52
+RHmax.tower| 150 | 330 | < 30 | 24
+RHmin.tower| 150 | 330 | < 30 | 59
+RHmax.floor| 150 | 330 | < 10 | 9
+RHmin.floor| 150 | 330 | < 10 | 15
+
+met_minute.Rda (also .csv) are generated at this stage. ~364 MB size with default 'bzip2' compression. This can be saved with 'xz' compression to reduce file size, but saves and loads quite slowly.
+
+4. Daily summaries are then created at this stage. For Temp and RH they are Tmax, Tmin, RHmax, RHmin. Unreasonable summer values are removed. Summer is defined as  doy > 150 & doy < 330. RHmax in summer below 30% is considered unacceptable, RHmin below 10%, Tmax below 4 deg C and Tmin below 0 deg C.
+
+    This data is now stored as met_daily.Rda (also .txt).
+
+5. Gap-filling: Daily summaries of missing data as well as data removed as above, ---for Forest Floor alone-- are gap-filled from green-house data.
+    Gap-filled version is stored as metbottom.filled.Rda (also .txt). It retains daily summaries for Tower-Top, which are not gap-filled.
+6. Generates graphs for daily and annual summaries. Also a graph comparing daily data for forest floor versus tower-top. See project folder 'figures/'
+7. Finally, calculates and plots climatic mean and SE (for doy across years) for each variable.
+8. Gaps in minute (met_minute.Rda) and daily data (metbottom.filled.Rda) are filled with climatalogical means.
+9. mettower package is installed and attached.
+
+
+```{r, Chunk 3, eval = FALSE}
+# Refers to Chunk 3.2.b above
+# Set unacceptable data range
+# If you were to change this range, set it here
+year <- 2020
+df_dict0 <-
+  data.frame(
+    variable = c("Precip.tower", "Ws.tower", "Bp.tower", "Rs.floor", "Rs.tower", "Temp.floor", "Temp.tower", "RH.floor", "RH.tower", "SVP.floor", "SVP.tower"),
+    out_low = c(0, 0, 90, -10, -10, -25, -25, 10, 10, 0, 0),
+    out_high = c(300, 50, 104, 1500, 1500, 50, 50, 100, 100, 10, 10)
+  )
+#--
+# Refers to Chunk 3.3 above
+met.Rs.QC.1 <- read.csv("data-raw/MetTower_Rs_data/PSP2002to2019.csv", na.strings = c("NA", "NaN", ""), header = FALSE, row.names = NULL, check.names = F)
+#--
+source("code/fun.mettower.R")
+# year as in the current year set above
+fun.mettower(year = year, df_dict0 = df_dict0, met.Rs.QC.1 = met.Rs.QC.1)
+```
+
+
+```{r Chunk 5, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', fig.cap = "Figure 1. Temperature offset changes after 2017-03-09 onwards. Daily Tmax shown before removing extreme values. These data are not included in the package."}
+knitr::include_graphics("figures/graph.1_Tower Temp offset.png")
+```
+
+```{r Chunk 6, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', fig.cap = "Figure 2. Solar radiation data at Forest Floor has data gaps in the recent years. Data shown before removing extreme values. Data not included in the package."}
+knitr::include_graphics("figures/graph.5_daily_met_data_by_year_forestfloor.png")
+```
+
+
+
+```{r Chunk 7, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', results = 'asis', fig.cap = "Figure 3. met underscore daily.rda data gaps (grey blocks) after cleaning. Daily data is shown. Limits in Table 2 beyond which to remove erroneous data have been visually determined from here. Limits have been kept on the conservative side so as not to remove extreme real events, but these limits can be adjusted if so desired."}
+knitr::include_graphics("figures/mettower_daily_gap.png")
+```
+
+
+```{r Chunk 0.01, eval = TRUE, echo = FALSE, message = FALSE}
+    dates <- read.csv("results/available.daterange.csv", header = TRUE, row.names = 1)
+```
+
+####Updated version's Date-Time range
+
+Variable | Lower limit | Upper limit
+---------------------- | -------------------------- | -------------------------
+Date and time stamp | `r dates$date.time[1]` | `r dates$date.time[2]`
