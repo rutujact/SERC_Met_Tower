@@ -6,8 +6,8 @@ author:
 - Patrick Neale
 date: "`r format(Sys.time(), '%B-%d-%Y')`"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 oa: Rutuja Chitra-Tarak
 ---
 
@@ -24,7 +24,7 @@ This package and R Markdown file are designed to download, amend, vett, and gap 
 
 This function pulls minute data from MetTower folder, where it is downloaded (typically monthly) from the Photobio lab shared folder. The daily minute data is collected into files of yearly minute-scale data and copied to a folder *minute_by_year* in the *data-raw* directory.  Often only data for the current, incomplete year needs to be collated. Avoid compiling earlier years again, as it takes a long time.
 
-```{r, Chunk 1, eval = FALSE}
+```{r, Chunk 1, eval = TRUE}
 # Set current year
 # If you wish to collate older years too, then turn old.years = TRUE
 year <- 2020
@@ -34,6 +34,7 @@ year <- 2020
 # where raw tower data is manually downloaded.
 # Without referring to this, the current mettower package won't be updated.
 from.copy.path <-  "/Users/rutuja/Dropbox (Smithsonian)/Work_at_SERC/Data/SERC_Met_data/MET_TOWER/"
+# from.copy.path <-  "~/Dropbox/SERC_MONITORING/MET_TOWER_data-package/mettower"
 old.years <- FALSE
 source("code/functions_to_source_data.R")
 fun.get_minute_by_year(year = year, from.copy.path = from.copy.path, old.years = old.years)
@@ -43,7 +44,7 @@ fun.get_minute_by_year(year = year, from.copy.path = from.copy.path, old.years =
 
 This function combines minute data by year files into one single large file, named with initial and last years. Often only the current year needs to be appended to the older multi-year file to generate a new one.
 
-```{r, Chunk 2, eval = FALSE}
+```{r, Chunk 2, eval = TRUE}
 # older file is identified as 2002- (year - 1)
 # year set as in the current year above
 # if you wish to collate older years too, then turn old.years = TRUE
@@ -108,8 +109,8 @@ Variable | Lower limit (DOY) | Upper limit (DOY) | Threshold Value | Obs. remove
 -------- | --------- | ---------|---------| --------
 Temp.floor | 100 | 150 | < 0 $^\circ$C | 0
 Temp.tower | 100 | 150 | < 0 $^\circ$C | 2
-Temp.floor | 150 | 270 | < 4 $^\circ$C | 5
-Temp.tower | 150 | 270 | < 4 $^\circ$C | 124
+Temp.floor | 150 | 270 | < 5 $^\circ$C | 5
+Temp.tower | 150 | 270 | < 5 $^\circ$C | 124
 Temp.floor | 270 | 330 | < -10 $^\circ$C | 1
 Temp.tower | 270 | 330 | < -10 $^\circ$C | 52
 RHmax.tower| 150 | 330 | < 30 | 24
@@ -131,7 +132,7 @@ met_minute.Rda (also .csv) are generated at this stage. ~364 MB size with defaul
 9. mettower package is installed and attached.
 
 
-```{r, Chunk 3, eval = FALSE}
+```{r, Chunk 3, eval = TRUE}
 # Refers to Chunk 3.2.b above
 # Set unacceptable data range
 # If you were to change this range, set it here
@@ -159,7 +160,6 @@ knitr::include_graphics("figures/graph.1_Tower Temp offset.png")
 ```{r Chunk 6, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', fig.cap = "Figure 2. Solar radiation data at Forest Floor has data gaps in the recent years. Data shown before removing extreme values. Data not included in the package."}
 knitr::include_graphics("figures/graph.5_daily_met_data_by_year_forestfloor.png")
 ```
-
 
 
 ```{r Chunk 7, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', results = 'asis', fig.cap = "Figure 3. met underscore daily.rda data gaps (grey blocks) after cleaning. Daily data is shown. Limits in Table 2 beyond which to remove erroneous data have been visually determined from here. Limits have been kept on the conservative side so as not to remove extreme real events, but these limits can be adjusted if so desired."}

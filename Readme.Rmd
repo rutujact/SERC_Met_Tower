@@ -7,6 +7,8 @@ author:
 date: "`r format(Sys.time(), '%B-%d-%Y')`"
 output:
   html_document: default
+  pdf_document: default
+  fig_caption: yes
 version: 1
 ---
 
@@ -85,8 +87,6 @@ S.N. | Data product object | Description | Variables & Units | Details
 <!-- 2 | met_daily | This is the daily summary dataset based on 'met_minute'.| See Table 3 | See Table 3 for variables and units and limits. Unacceptable seasonal outliers are also removed. | Check 'Updater.html' section 3. fun.mettower sub-section 4. -->
 <!-- 3 | metbottom.filled | Daily summary data 'met_daily' is substituted with SERC greenhouse station data. | See Table 3 | Unacceptable seasonal outliers for Temp, RH for forest floor are removed after substitution. Daily summaries for Tower Top are retained here, but are not gap-filled. | Check 'Updater.html' section 3. fun.mettower sub-section 4. -->
 <!-- 4 | clim | This has climatic means +- SE based on 'metbottom.filled'. | See Table 3 -->
-
-
 
 ##### Table 2: Minute data in minute scale datasets
 This refers to the files SERC_minute_data.Rda and SERC_minute_data.h5.

@@ -207,7 +207,7 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0,
     select(-Rs.floor.x, -Rs.floor.y, -Rs.tower.x, -Rs.tower.y)
 
   ###--------------------------------------------
-  ### Substituting new RH floor fro 2018 on
+  ### Substituting new RH floor from 2018 on
   ###--------------------------------------------
   tmp.RH.floor <- read.csv(file = "data-raw/FF_T_RH_201710to201912.csv")
   names(tmp.RH.floor) <- c("Year", "Month", "Dy", "Hr", "Min", "Temp.C", "RH.floor")
@@ -295,8 +295,8 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0,
 
 # the parenthetical assignments print the output for integration into a table
 
-  met5$Temp.floor[met5$Julian > 150 & met5$Julian < 270 & met5$Temp.floor < 4] <- NA
-  met5$Temp.tower[met5$Julian > 150 & met5$Julian < 270 & met5$Temp.tower < 4] <- NA
+  met5$Temp.floor[met5$Julian > 150 & met5$Julian < 270 & met5$Temp.floor < 5] <- NA
+  met5$Temp.tower[met5$Julian > 150 & met5$Julian < 270 & met5$Temp.tower < 5] <- NA
 
   met5$Temp.floor[met5$Julian > 100 & met5$Julian < 150 & met5$Temp.floor < -10] <- NA
   met5$Temp.tower[met5$Julian > 100 & met5$Julian < 150 & met5$Temp.tower < -10] <- NA
