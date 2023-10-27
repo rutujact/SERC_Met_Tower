@@ -37,7 +37,6 @@ There are six data files published in this collection, described in [Table 1](#d
 **Missing data** Note that significant gaps exist in the data for Temperature and Relative Humidity.  *Forest Floor* Temperature and Relative Humidity readings are problematic from August 1, 2013 until end of 2014. For *Tower Top* they are problematic from Jan 2015 through March 9, 2017 (new sensor unit was installed 3/9/2017).
 
 Over any long data gathering period, instruments change. That is the case with this data. Most importantly, instruments degrade and are replaced or re-calibrated. For a full account of instrument changes and data adjustment issues see [Updater markdown file](Updater.html) and [documentation](literature/Readme for Tower and Forest Floor Temperature and Relative Humidity data.docx) from the [SERC Photobiology lab.](https://serc.si.edu/labs/photobiology-and-solar-radiation)
-<<<<<<< HEAD
 
 **Filtering** In the minute data, Temp.tower is removed when RH.tower > 100 during January-01-2015 to November-13-2015 and February-08-2016 to March-09-2017. RH.tower is flagged in column tower.RH.Flag as 0 from January-01-2015 to November-13-2015 (records ~ 6% lower RH), while from February-08-2016 to March-09-2017 RH.tower is removed. RH.floow and RH.tower values < 10 are also removed.
 
