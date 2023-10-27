@@ -37,6 +37,7 @@ There are six data files published in this collection, described in [Table 1](#d
 **Missing data** Note that significant gaps exist in the data for Temperature and Relative Humidity.  *Forest Floor* Temperature and Relative Humidity readings are problematic from August 1, 2013 until end of 2014. For *Tower Top* they are problematic from Jan 2015 through March 9, 2017 (new sensor unit was installed 3/9/2017).
 
 Over any long data gathering period, instruments change. That is the case with this data. Most importantly, instruments degrade and are replaced or re-calibrated. For a full account of instrument changes and data adjustment issues see [Updater markdown file](Updater.html) and [documentation](literature/Readme for Tower and Forest Floor Temperature and Relative Humidity data.docx) from the [SERC Photobiology lab.](https://serc.si.edu/labs/photobiology-and-solar-radiation)
+<<<<<<< HEAD
 
 **Filtering** In the minute data, Temp.tower is removed when RH.tower > 100 during January-01-2015 to November-13-2015 and February-08-2016 to March-09-2017. RH.tower is flagged in column tower.RH.Flag as 0 from January-01-2015 to November-13-2015 (records ~ 6% lower RH), while from February-08-2016 to March-09-2017 RH.tower is removed. RH.floow and RH.tower values < 10 are also removed.
 
@@ -87,13 +88,72 @@ S.N. | Data product object | Description | Variables & Units | Details
 <!-- 2 | met_daily | This is the daily summary dataset based on 'met_minute'.| See Table 3 | See Table 3 for variables and units and limits. Unacceptable seasonal outliers are also removed. | Check 'Updater.html' section 3. fun.mettower sub-section 4. -->
 <!-- 3 | metbottom.filled | Daily summary data 'met_daily' is substituted with SERC greenhouse station data. | See Table 3 | Unacceptable seasonal outliers for Temp, RH for forest floor are removed after substitution. Daily summaries for Tower Top are retained here, but are not gap-filled. | Check 'Updater.html' section 3. fun.mettower sub-section 4. -->
 <!-- 4 | clim | This has climatic means +- SE based on 'metbottom.filled'. | See Table 3 -->
+=======
 
+**Filtering** In the minute data, Temp.tower is removed when RH.tower > 100 during January-01-2015 to November-13-2015 and February-08-2016 to March-09-2017. RH.tower is flagged in column tower.RH.Flag as 0 from January-01-2015 to November-13-2015 (records ~ 6% lower RH), while from February-08-2016 to March-09-2017 RH.tower is removed. RH.floow and RH.tower values < 10 are also removed.
+
+Beyond the imposed limits in Table 2, seasonally removals of daily data were made according to the following:
+
+Temperatures < 4 $^\circ$C in summer (doy > 150 & doy < 270)
+Temp < 4 $^\circ$C in summer (doy > 150 & doy < 270) are also removed.
+Temp < 4 $^\circ$C in summer (doy > 150 & doy < 270) are also removed.
+
+In daily summary data RHmax in summer (doy > 150 & doy < 330) below 30%, RHmin below 10%, Tmax below 4 deg C and Tmin below 0 deg C are considered unacceptable and removed.
+
+**Replacing seasonally unacceptable extremes**
+
+**RHmax in summer below 30 looks unacceptable**
+RHmax.floor[Julian >150 & Julian < 330 & RHmax.floor < 30] <- NA
+RHmax.tower[Julian >150 & Julian < 330 & RHmax.tower < 30] <- NA
+**RHmin in summer below 10 looks unacceptable**
+RHmin.floor[Julian > 130 & Julian < 330 & RHmin.floor < 10] <- NA
+RHmin.tower[Julian > 130 & Julian < 330 & RHmin.tower < 10] <- NA
+
+**Tmax in summer below 4 looks unacceptable**
+Tmax.floor[Julian > 150 & Julian < 270 & Tmax.floor < 4] <- NA
+Tmax.tower[Julian > 150 & Julian < 270 & Tmax.tower < 4] <- NA
+**Tmin in summer below 0 looks unacceptable**
+Tmin.floor[Julian > 150 & Julian < 270 & Tmin.floor < 0] <- NA
+Tmin.tower[Julian > 150 & Julian < 270 & Tmin.tower < 0] <- NA
+
+
+**Gap-filling** Daily summaries of missing data as well as data removed as above, ---for Forest Floor alone-- are gap-filled from green-house data. Remaining gaps in daily data are filled with climatalogical means (doy means). All gaps in minute data are filled with climatalogical means (doy-minute means).
+
+-See figures below to get a general sense of raw data issues, variables and periods covered in the package datasets, data gaps therein, trends over the years and between Tower Top and Forest Floor.
+
+-This package is updated using file [Updater markdown file](Updater.html)
+
+-This data should be cited as: Chitra-Tarak, Rutuja, Sean M. McMahon, Patrick J. Neale. Smithsonian Online Libraries. A data-package for the Smithsonian Environmental Research Center, Maryland high resolution meteorological tower data. 2002-2019 DOI: 10.25573/serc.11020646.v3
+
+##### Table 1 Data products in this package {#datafiles}
+Files are provided in both .Rda and .h5 formats.
+
+S.N. | Data product object | Description | Variables & Units | Details
+- | --------- | ---------------------  | ------------- | --------------------------------
+1 | SERC.daily.data | This is daily mettower from either *SERC_daily_data.Rda* or *SERC_daily_data.h5* data gap-filled with climatic means for the DOY. | See Table 3
+2 | SERC.minute.data | This is minute mettower data from either *SERC_minute_data.Rda* or *SERC_minute_data.h5*  gap-filled with climatic means for DOY-minute, or minute of the year| See Table 21 | met_minute  | This is the minute data, precursor to 'met_daily'. | See Table 2 | Table 2 includes limits beyond which data are considered unacceptable and removed. Unacceptable seasonal outliers are also removed. Check Updater.html section *3. fun.mettower* sub-section 2.a and 2.b for details.
+
+<!-- 2 | met_daily | This is the daily summary dataset based on 'met_minute'.| See Table 3 | See Table 3 for variables and units and limits. Unacceptable seasonal outliers are also removed. | Check 'Updater.html' section 3. fun.mettower sub-section 4. -->
+<!-- 3 | metbottom.filled | Daily summary data 'met_daily' is substituted with SERC greenhouse station data. | See Table 3 | Unacceptable seasonal outliers for Temp, RH for forest floor are removed after substitution. Daily summaries for Tower Top are retained here, but are not gap-filled. | Check 'Updater.html' section 3. fun.mettower sub-section 4. -->
+<!-- 4 | clim | This has climatic means +- SE based on 'metbottom.filled'. | See Table 3 -->
+
+>>>>>>> 9f050dc27384a2479ff8c4668e07f8bbfe457080
+
+##### Table 2: Minute data in minute scale datasets
+This refers to the files SERC_minute_data.Rda and SERC_minute_data.h5.
+
+<<<<<<< HEAD
+Limits for time variables are the ranges in the data as they are--included to show the available date range, limits for other variables are imposed for cleaning. Saturated Vapour Pressure (SVP) is derived using temperature (Temp) based on Buck's equation: SVP = 0.61121 x exp((18.678 - Temp/234.84) * (Temp/(257.14 + T))). Vapour Pressure Deficit (VPD) is derived using SVP and relative humidity (RH) as VPD = SVP x (1 – RH/100).
+
+
+=======
 ##### Table 2: Minute data in minute scale datasets
 This refers to the files SERC_minute_data.Rda and SERC_minute_data.h5.
 
 Limits for time variables are the ranges in the data as they are--included to show the available date range, limits for other variables are imposed for cleaning. Saturated Vapour Pressure (SVP) is derived using temperature (Temp) based on Buck's equation: SVP = 0.61121 x exp((18.678 - Temp/234.84) * (Temp/(257.14 + T))). Vapour Pressure Deficit (VPD) is derived using SVP and relative humidity (RH) as VPD = SVP x (1 – RH/100).
 
 
+>>>>>>> 9f050dc27384a2479ff8c4668e07f8bbfe457080
 ```{r Chunk 0.01, eval = TRUE, echo = FALSE, message = FALSE}
     dates <- read.csv("results/available.daterange.csv", header = TRUE, row.names = 1)
 ```
@@ -170,6 +230,7 @@ knitr::include_graphics("figures/graph.6_Tower Top vs. Forest Floor.png")
 ```{r, Chunk 5, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', fig.cap = "Figure 5. Seasonal contrast between Tower Top and Forest Floor. Daily climatic mean +- SE are shown after cleaning and, additionally for forest floor, after gap filling from SERC Greenhouse station (using 'clim.Rda')."}
 knitr::include_graphics("figures/graph.7_Tower Top vs. Forest Floor_mean & SE.png")
 ```
+<<<<<<< HEAD
 
 ```{r, Chunk 6, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', fig.cap = "Figure 6. Annual summary met data for Met Tower Top and Forest Floor afer cleaning (using 'metbottom.filled.Rda').",}
 knitr::include_graphics("figures/graph.4_annual_met_data.png")
@@ -177,6 +238,15 @@ knitr::include_graphics("figures/graph.4_annual_met_data.png")
 
 ##### Table 4 Percent gaps in minute data (met_minute.Rda) before gap-filling with climatic means{#missing.minute}
 
+=======
+
+```{r, Chunk 6, eval = TRUE, echo = FALSE, message = FALSE, fig.align = 'center', out.width = "100%", fig.pos = 'H', fig.cap = "Figure 6. Annual summary met data for Met Tower Top and Forest Floor afer cleaning (using 'metbottom.filled.Rda').",}
+knitr::include_graphics("figures/graph.4_annual_met_data.png")
+```
+
+##### Table 4 Percent gaps in minute data (met_minute.Rda) before gap-filling with climatic means{#missing.minute}
+
+>>>>>>> 9f050dc27384a2479ff8c4668e07f8bbfe457080
 ```{r, Chunk 7, results = 'asis', eval = TRUE, echo = FALSE, message = FALSE}
 writeLines("td, th { padding : 6px } th { background-color : brown ; color : white; border : 10px solid white; } td { color : brown ; border : 1px solid brown }", con = "mystyle.css")
     missing_met_minute <- read.table("results/missing_met_minute.txt", header = TRUE)

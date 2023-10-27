@@ -295,8 +295,13 @@ fun.mettower <- function(year = year, df_dict0 = df_dict0,
 
 # the parenthetical assignments print the output for integration into a table
 
+<<<<<<< HEAD
   met5$Temp.floor[met5$Julian > 150 & met5$Julian < 270 & met5$Temp.floor < 5] <- NA
   met5$Temp.tower[met5$Julian > 150 & met5$Julian < 270 & met5$Temp.tower < 5] <- NA
+=======
+  met5$Temp.floor[met5$Julian > 150 & met5$Julian < 270 & met5$Temp.floor < 4] <- NA
+  met5$Temp.tower[met5$Julian > 150 & met5$Julian < 270 & met5$Temp.tower < 4] <- NA
+>>>>>>> 9f050dc27384a2479ff8c4668e07f8bbfe457080
 
   met5$Temp.floor[met5$Julian > 100 & met5$Julian < 150 & met5$Temp.floor < -10] <- NA
   met5$Temp.tower[met5$Julian > 100 & met5$Julian < 150 & met5$Temp.tower < -10] <- NA
