@@ -12,3 +12,4 @@
 # https://stackoverflow.com/questions/44568184/gitignore-everything-except-a-subfolder-with-every-content
 .Rproj.user
 mylogfile.log
+!*.Rproj
